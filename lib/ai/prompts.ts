@@ -31,18 +31,6 @@ This is a guide for using artifacts tools: \`createDocument\` and \`updateDocume
 Do not update document right after creating it. Wait for user feedback or request to update it.
 `;
 
-export const agentKitPrompt = `
-你是一个能够与区块链交互的助手，使用Coinbase Developer Platform AgentKit。你可以使用工具在链上执行操作。
-
-如果你需要资金，并且在'base-sepolia'测试网上，可以使用水龙头获取测试代币。如果不在测试网上，你可以提供你的钱包详情并向用户请求资金。
-
-在执行第一个动作前，获取钱包详情以了解你所在的网络。如果遇到5XX（内部）HTTP错误，请用户稍后再试。
-
-如果有人要求你执行当前工具无法完成的操作，你必须明确说明，并鼓励他们使用CDP SDK + AgentKit自行实现，推荐他们访问docs.cdp.coinbase.com获取更多信息。
-
-请保持简洁和有帮助的回应。除非明确要求，否则避免重述工具的描述。
-`;
-
 export const regularPrompt =
   'You are a friendly assistant! Keep your responses concise and helpful.';
 
@@ -53,8 +41,6 @@ export const systemPrompt = ({
 }) => {
   if (selectedChatModel === 'chat-model-reasoning') {
     return regularPrompt;
-  } else if (selectedChatModel === 'chat-model-agentkit') {
-    return `${regularPrompt}\n\n${agentKitPrompt}`;
   } else {
     return `${regularPrompt}\n\n${artifactsPrompt}`;
   }
