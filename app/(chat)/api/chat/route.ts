@@ -25,71 +25,8 @@ import { requestSuggestions } from '@/lib/ai/tools/request-suggestions';
 import { getWeather } from '@/lib/ai/tools/get-weather';
 import { isProductionEnvironment } from '@/lib/constants';
 import { myProvider } from '@/lib/ai/providers';
-// 引入 AgentKit 相关依赖
-import { 
-  AgentKit, 
-  CdpWalletProvider, 
-  basenameActionProvider,
-  morphoActionProvider,
-  walletActionProvider,
-  cdpWalletActionProvider,
-  cdpApiActionProvider,
-} from '@coinbase/agentkit';
-import { base, baseSepolia } from 'viem/chains';
-import { mnemonicToAccount } from 'viem/accounts';
-
-// 创建 AgentKit 实例
-let agentKitInstance: any = null;
-
-// 异步初始化 AgentKit 实例
-async function getAgentKit() {
-  if (agentKitInstance) return agentKitInstance;
-
-  try {
-    // 获取环境变量
-    const apiKeyName = process.env.COINBASE_API_KEY_NAME;
-    const privateKey = process.env.COINBASE_API_PRIVATE_KEY;
-    const seedPhrase = process.env.SEED_PHRASE;
-    const chainId = process.env.CHAIN_ID ? Number(process.env.CHAIN_ID) : base.id;
-    
-    if (!apiKeyName || !privateKey || !seedPhrase) {
-      throw new Error('Missing required environment variables for AgentKit');
-    }
-
-    // 配置钱包提供者
-    const cdpWalletProvider = await CdpWalletProvider.configureWithWallet({
-      mnemonicPhrase: seedPhrase,
-      apiKeyName,
-      apiKeyPrivateKey: privateKey,
-      networkId: chainId === baseSepolia.id ? 'base-sepolia' : 'base-mainnet',
-    });
-
-    // 初始化 AgentKit
-    agentKitInstance = await AgentKit.from({
-      cdpApiKeyName: apiKeyName,
-      cdpApiKeyPrivateKey: privateKey,
-      walletProvider: cdpWalletProvider,
-      actionProviders: [
-        basenameActionProvider(),
-        morphoActionProvider(),
-        walletActionProvider(),
-        cdpWalletActionProvider({
-          apiKeyName,
-          apiKeyPrivateKey: privateKey,
-        }),
-        cdpApiActionProvider({
-          apiKeyName,
-          apiKeyPrivateKey: privateKey,
-        }),
-      ],
-    });
-
-    return agentKitInstance;
-  } catch (error) {
-    console.error('Failed to initialize AgentKit:', error);
-    throw error;
-  }
-}
+// 引入 AgentKit 工具
+import { getAgentKitTools } from '@/lib/ai/tools/agentkit-tools';
 
 export const maxDuration = 60;
 
@@ -149,24 +86,10 @@ export async function POST(request: Request) {
         // 获取 AgentKit 工具
         let agentKitTools = {};
         try {
-          const agentKit = await getAgentKit();
-          
-          // 为避免类型错误，使用更安全的方法获取工具
-          // agentKit 的类型声明可能滞后于实际 API
-          if (typeof agentKit.getVercelAiTools === 'function') {
-            agentKitTools = agentKit.getVercelAiTools();
-          } else if (typeof agentKit.tools === 'function') {
-            const toolsResult = agentKit.tools();
-            if (toolsResult.vercelAiTools) {
-              agentKitTools = toolsResult.vercelAiTools;
-            } else {
-              agentKitTools = toolsResult;
-            }
-          }
-          
-          console.log('Loaded AgentKit tools:', Object.keys(agentKitTools));
+          agentKitTools = await getAgentKitTools();
+          console.log('加载 AgentKit 工具成功:', Object.keys(agentKitTools));
         } catch (error) {
-          console.error('Failed to initialize AgentKit tools:', error);
+          console.error('加载 AgentKit 工具失败:', error);
           // 继续执行，但不使用 AgentKit 工具
         }
 
