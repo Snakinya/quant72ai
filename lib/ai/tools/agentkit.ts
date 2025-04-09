@@ -8,7 +8,7 @@ import {
   SmartWalletProvider,
 } from '@coinbase/agentkit';
 import { getVercelAITools } from '@coinbase/agentkit-vercel-ai-sdk';
-import { DataStream } from 'ai';
+import { DataStreamWriter, ToolSet } from 'ai';
 import { Address, Hex } from 'viem';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import fs from 'fs/promises';
@@ -32,9 +32,13 @@ export const initializeAgentKit = async ({
   dataStream,
 }: {
   session: Session;
-  dataStream: DataStream;
+  dataStream: DataStreamWriter;
 }) => {
   try {
+    if (!session.user?.id) {
+      throw new Error('User not authenticated');
+    }
+    
     // 获取环境变量
     const networkId = process.env.NETWORK_ID || 'base-sepolia';
     const cdpApiKeyName = process.env.CDP_API_KEY_NAME;
@@ -113,7 +117,7 @@ export const initializeAgentKit = async ({
     );
 
     // 获取Vercel AI SDK兼容的工具
-    const tools = getVercelAITools(agentKit);
+    const tools = getVercelAITools(agentKit) as ToolSet;
     console.log(`AgentKit initialized with ${Object.keys(tools).length} tools for wallet ${smartWalletAddress} on ${networkId}`);
     return tools;
   } catch (error) {
