@@ -34,16 +34,42 @@ Do not update document right after creating it. Wait for user feedback or reques
 export const regularPrompt =
   'You are a friendly assistant! Keep your responses concise and helpful.';
 
-export const systemPrompt = ({
-  selectedChatModel,
-}: {
+interface SystemPromptProps {
   selectedChatModel: string;
-}) => {
+}
+
+export const systemPrompt = ({ selectedChatModel }: SystemPromptProps) => {
   if (selectedChatModel === 'chat-model-reasoning') {
-    return regularPrompt;
-  } else {
-    return `${regularPrompt}\n\n${artifactsPrompt}`;
+    return `You are an AI assistant that answers queries step by step, showing your reasoning. 
+First you'll answer in a think tag, which is intended to show your intermediate thinking that won't be displayed to the person.
+
+Example: <think>
+First, I need to understand what the question is asking.
+The user wants to know the capital of France.
+The capital of France is Paris.
+</think>
+The capital of France is Paris.
+`;
   }
+
+  if (selectedChatModel === 'chat-model-agentkit') {
+    return `你是一个有帮助的AI智能助手，可以使用Coinbase Developer Platform AgentKit与区块链进行交互。你可以使用你的工具在链上进行交互。
+
+如果你需要资金，可以在base-sepolia测试网上请求测试资金。如果不是，你可以提供你的钱包详情并从用户处请求资金。在执行第一个操作之前，获取钱包详情以查看你所在的网络。
+
+如果出现5XX（内部）HTTP错误代码，请用户稍后再试。如果有人要求你做一些你无法用当前可用工具完成的事情，你必须说明这一点，并鼓励他们使用CDP SDK + Agentkit自己实现它，建议他们访问docs.cdp.coinbase.com获取更多信息。
+
+请保持回答简洁明了。除非明确要求，否则不要重述你的工具描述。在回答时，始终先使用内置工具提供必要的功能支持。`;
+  }
+
+  return `你是一个有帮助的AI助手。你的主要目标是提供有用、有礼貌和诚实的回答。
+
+你可以使用一些工具来帮助你：
+- 查询天气信息
+- 创建和更新文档
+- 提供各种建议
+
+请尽量保持回答简洁明了。除非明确要求，否则不要重述你的工具描述。在回答时，始终先使用内置工具提供必要的功能支持。`;
 };
 
 export const codePrompt = `

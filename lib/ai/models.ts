@@ -17,4 +17,9 @@ export const chatModels: Array<ChatModel> = [
     name: 'GPT-4o-mini',
     description: 'OpenAI GPT-4o-mini model',
   },
+  {
+    id: 'chat-model-agentkit',
+    name: 'GPT-4o with AgentKit',
+    description: 'OpenAI GPT-4o model with Coinbase AgentKit tools',
+  },
 ];

@@ -25,6 +25,7 @@ import { requestSuggestions } from '@/lib/ai/tools/request-suggestions';
 import { getWeather } from '@/lib/ai/tools/get-weather';
 import { isProductionEnvironment } from '@/lib/constants';
 import { myProvider } from '@/lib/ai/providers';
+import { getAgentKitTools } from '@/lib/ai/tools/agentkit';
 
 export const maxDuration = 60;
 
@@ -80,7 +81,17 @@ export async function POST(request: Request) {
     });
 
     return createDataStreamResponse({
-      execute: (dataStream) => {
+      execute: async (dataStream) => {
+        // 如果选择了AgentKit模型，初始化AgentKit工具
+        let agentKitTools = {};
+        if (selectedChatModel === 'chat-model-agentkit') {
+          try {
+            agentKitTools = await getAgentKitTools({ session, dataStream });
+          } catch (error) {
+            console.error('加载AgentKit工具失败:', error);
+          }
+        }
+
         const result = streamText({
           model: myProvider.languageModel(selectedChatModel),
           system: systemPrompt({ selectedChatModel }),
@@ -89,12 +100,7 @@ export async function POST(request: Request) {
           experimental_activeTools:
             selectedChatModel === 'chat-model-reasoning'
               ? []
-              : [
-                  'getWeather',
-                  'createDocument',
-                  'updateDocument',
-                  'requestSuggestions',
-                ],
+              : ['getWeather', 'createDocument', 'updateDocument', 'requestSuggestions'],
           experimental_transform: smoothStream({ chunking: 'word' }),
           experimental_generateMessageId: generateUUID,
           tools: {
@@ -105,6 +111,7 @@ export async function POST(request: Request) {
               session,
               dataStream,
             }),
+            ...agentKitTools,
           },
           onFinish: async ({ response }) => {
             if (session.user?.id) {
