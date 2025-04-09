@@ -11,7 +11,7 @@ import { getVercelAITools } from '@coinbase/agentkit-vercel-ai-sdk';
 import { DataStream } from 'ai';
 import { Address, Hex } from 'viem';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
 
 // 定义钱包数据类型
@@ -48,8 +48,10 @@ export const initializeAgentKit = async ({
 
     // 根据用户ID和网络ID创建钱包数据文件路径
     const walletDir = path.join(process.cwd(), 'wallets');
-    if (!fs.existsSync(walletDir)) {
-      fs.mkdirSync(walletDir, { recursive: true });
+    try {
+      await fs.mkdir(walletDir, { recursive: true });
+    } catch (error) {
+      console.error('Error creating wallet directory:', error);
     }
     
     const walletDataFile = path.join(
@@ -61,13 +63,13 @@ export const initializeAgentKit = async ({
     let privateKey: Hex | null = null;
 
     // 读取现有钱包数据（如果存在）
-    if (fs.existsSync(walletDataFile)) {
-      try {
-        walletData = JSON.parse(fs.readFileSync(walletDataFile, 'utf8')) as WalletData;
-        privateKey = walletData.privateKey;
-      } catch (error) {
-        console.error(`Error reading wallet data:`, error);
-      }
+    try {
+      const fileData = await fs.readFile(walletDataFile, 'utf8');
+      walletData = JSON.parse(fileData) as WalletData;
+      privateKey = walletData.privateKey;
+    } catch (error) {
+      // 如果文件不存在或读取错误，继续创建新钱包
+      console.log(`No existing wallet found or error reading wallet data, creating new wallet`);
     }
 
     // 如果没有私钥，生成一个新的
@@ -83,7 +85,7 @@ export const initializeAgentKit = async ({
       networkId,
       signer,
       smartWalletAddress: walletData?.smartWalletAddress,
-      paymasterUrl: undefined,
+      paymasterUrl: process.env.PAYMASTER_URL,
     });
 
     // 初始化AgentKit
@@ -102,7 +104,7 @@ export const initializeAgentKit = async ({
 
     // 保存钱包数据
     const smartWalletAddress = await walletProvider.getAddress();
-    fs.writeFileSync(
+    await fs.writeFile(
       walletDataFile,
       JSON.stringify({
         privateKey,
@@ -111,7 +113,9 @@ export const initializeAgentKit = async ({
     );
 
     // 获取Vercel AI SDK兼容的工具
-    return getVercelAITools(agentKit);
+    const tools = getVercelAITools(agentKit);
+    console.log(`AgentKit initialized with ${Object.keys(tools).length} tools for wallet ${smartWalletAddress} on ${networkId}`);
+    return tools;
   } catch (error) {
     console.error('Failed to initialize AgentKit:', error);
     throw error;

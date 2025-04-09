@@ -38,6 +38,9 @@ importers:
       '@coinbase/agentkit':
         specifier: ^0.6.1
         version: 0.6.1(bufferutil@4.0.9)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.8.2)(utf-8-validate@5.0.10)
+      '@coinbase/agentkit-vercel-ai-sdk':
+        specifier: ^0.1.0
+        version: 0.1.0(@coinbase/agentkit@0.6.1(bufferutil@4.0.9)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.8.2)(utf-8-validate@5.0.10))(ai@4.2.10(react@19.0.0-rc-45804af1-20241021)(zod@3.24.2))
       '@radix-ui/react-alert-dialog':
         specifier: ^1.1.2
         version: 1.1.6(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(react-dom@19.0.0-rc-45804af1-20241021(react@19.0.0-rc-45804af1-20241021))(react@19.0.0-rc-45804af1-20241021)
@@ -450,6 +453,12 @@ packages:
 
   '@codemirror/view@6.36.4':
     resolution: {integrity: sha512-ZQ0V5ovw/miKEXTvjgzRyjnrk9TwriUB1k4R5p7uNnHR9Hus+D1SXHGdJshijEzPFjU25xea/7nhIeSqYFKdbA==}
+
+  '@coinbase/agentkit-vercel-ai-sdk@0.1.0':
+    resolution: {integrity: sha512-/3ZGzs5jec2o1P8VSWXVKlZ96WCLpoGYznYyHHkunwolnRKAxcbV7vk1oeD/0wbBfXMNhpTUe5YCtgJl/2cNoA==}
+    peerDependencies:
+      '@coinbase/agentkit': '>=0.1.0'
+      ai: ^4.1.16
 
   '@coinbase/agentkit@0.6.1':
     resolution: {integrity: sha512-YAN1EAEDcdxf/GkZ8tzB9WHFygCEM5ksiUqLgfs/MshOD+qEO3ajyBt7xPrbB1Qz/3I5VDVNiwSQT6BMK7quKg==}
@@ -4729,6 +4738,12 @@ snapshots:
       '@codemirror/state': 6.5.2
       style-mod: 4.1.2
       w3c-keyname: 2.2.8
+
+  '@coinbase/agentkit-vercel-ai-sdk@0.1.0(@coinbase/agentkit@0.6.1(bufferutil@4.0.9)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.8.2)(utf-8-validate@5.0.10))(ai@4.2.10(react@19.0.0-rc-45804af1-20241021)(zod@3.24.2))':
+    dependencies:
+      '@coinbase/agentkit': 0.6.1(bufferutil@4.0.9)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.8.2)(utf-8-validate@5.0.10)
+      ai: 4.2.10(react@19.0.0-rc-45804af1-20241021)(zod@3.24.2)
+      zod: 3.24.2
 
   '@coinbase/agentkit@0.6.1(bufferutil@4.0.9)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.8.2)(utf-8-validate@5.0.10)':
     dependencies:
