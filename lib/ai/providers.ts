@@ -21,6 +21,7 @@ export const myProvider = isTestEnvironment
         'chat-model-reasoning': reasoningModel,
         'title-model': titleModel,
         'artifact-model': artifactModel,
+        'chat-model-agentkit': chatModel,
       },
     })
   : customProvider({
@@ -31,6 +32,7 @@ export const myProvider = isTestEnvironment
           model: groq('deepseek-r1-distill-llama-70b'),
           middleware: extractReasoningMiddleware({ tagName: 'think' }),
         }),
+        'chat-model-agentkit': openai('gpt-4o'),
         'title-model': openai('gpt-4o'),
         'artifact-model': openai('gpt-4o'),
       },

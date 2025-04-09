@@ -25,8 +25,7 @@ import { requestSuggestions } from '@/lib/ai/tools/request-suggestions';
 import { getWeather } from '@/lib/ai/tools/get-weather';
 import { isProductionEnvironment } from '@/lib/constants';
 import { myProvider } from '@/lib/ai/providers';
-// 引入 AgentKit 工具
-import { getAgentKitTools } from '@/lib/ai/tools/agentkit-tools';
+import { initializeAgentKit } from '@/lib/ai/tools/agentkit';
 
 export const maxDuration = 60;
 
@@ -83,43 +82,51 @@ export async function POST(request: Request) {
 
     return createDataStreamResponse({
       execute: async (dataStream) => {
-        // 获取 AgentKit 工具
-        let agentKitTools = {};
-        try {
-          agentKitTools = await getAgentKitTools();
-          console.log('加载 AgentKit 工具成功:', Object.keys(agentKitTools));
-        } catch (error) {
-          console.error('加载 AgentKit 工具失败:', error);
-          // 继续执行，但不使用 AgentKit 工具
+        // 根据选择的模型确定启用哪些工具
+        let activeTools: string[] = [];
+        let tools: Record<string, any> = {
+          getWeather,
+          createDocument: createDocument({ session, dataStream }),
+          updateDocument: updateDocument({ session, dataStream }),
+          requestSuggestions: requestSuggestions({
+            session,
+            dataStream,
+          }),
+        };
+
+        // 如果使用AgentKit模型，初始化AgentKit工具
+        if (selectedChatModel === 'chat-model-agentkit') {
+          try {
+            const agentKitTools = await initializeAgentKit({ 
+              session, 
+              dataStream 
+            });
+            // 合并工具集
+            tools = { ...tools, ...agentKitTools };
+            // 添加AgentKit工具名称到activeTools
+            activeTools = Object.keys(agentKitTools);
+          } catch (error) {
+            console.error('Failed to initialize AgentKit:', error);
+          }
+        } else if (selectedChatModel !== 'chat-model-reasoning') {
+          // 对于非推理模型和非AgentKit模型使用默认工具
+          activeTools = [
+            'getWeather',
+            'createDocument',
+            'updateDocument',
+            'requestSuggestions',
+          ];
         }
 
         const result = streamText({
           model: myProvider.languageModel(selectedChatModel),
           system: systemPrompt({ selectedChatModel }),
           messages,
-          maxSteps: 5,
-          experimental_activeTools:
-            selectedChatModel === 'chat-model-reasoning'
-              ? []
-              : [
-                  'getWeather',
-                  'createDocument',
-                  'updateDocument',
-                  'requestSuggestions',
-                  // AgentKit 工具会自动通过 tools 参数传递进去，不需要手动添加
-                ],
+          maxSteps: 10,  // 增加maxSteps以支持更复杂的AgentKit链上操作
+          experimental_activeTools: activeTools,
           experimental_transform: smoothStream({ chunking: 'word' }),
           experimental_generateMessageId: generateUUID,
-          tools: {
-            ...agentKitTools, // 添加 AgentKit 工具
-            getWeather,
-            createDocument: createDocument({ session, dataStream }),
-            updateDocument: updateDocument({ session, dataStream }),
-            requestSuggestions: requestSuggestions({
-              session,
-              dataStream,
-            }),
-          },
+          tools,
           onFinish: async ({ response }) => {
             if (session.user?.id) {
               try {
