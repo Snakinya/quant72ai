@@ -2,6 +2,7 @@ import type { z } from 'zod';
 import { GetMorphoVaultsSchema } from './schemas';
 import { getMorphoVaults } from './utils';
 import { SmartWalletProvider } from '@coinbase/agentkit';
+import { currentNetworkId } from '../../tools/agentkit';
 
 // 将chainId转换为数字
 function getChainIdFromNetworkId(networkId: string): number {
@@ -24,10 +25,9 @@ export async function getMorphoVaultsHandler(
     // 获取chainId
     let chainId = 8453; // 默认为Base主网
     
-    if (wallet) {
-      const networkId = wallet.networkId || 'base-mainnet';
-      chainId = getChainIdFromNetworkId(networkId);
-    }
+    // 使用全局变量currentNetworkId而不是从wallet对象获取
+    const networkId = currentNetworkId || 'base-mainnet';
+    chainId = getChainIdFromNetworkId(networkId);
     
     // 获取Morpho金库
     const vaults = await getMorphoVaults({

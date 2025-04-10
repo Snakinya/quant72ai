@@ -26,7 +26,7 @@ type WalletData = {
 let agentKit: AgentKit | null = null;
 export let walletProvider: SmartWalletProvider | null = null;
 let smartWalletAddress: Address | null = null;
-let currentNetworkId: string = '';
+export let currentNetworkId: string = '';
 
 // Initialize AgentKit and get tools
 export async function initializeAgentKit() {
