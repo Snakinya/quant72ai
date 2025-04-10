@@ -1,0 +1,1 @@
+{"privateKey":"0x2a0b0fea845481d779f1cc2eaf6f49d8e4c314215f7090d1ed7020220790c1e2","smartWalletAddress":"0x9144B7e948ac86af04E4d60c0aE976af29642697"}

@@ -8,6 +8,21 @@ const components: Partial<Components> = {
   // @ts-expect-error
   code: CodeBlock,
   pre: ({ children }) => <>{children}</>,
+  // 自定义p标签的渲染方式，处理hydration错误
+  p: ({ node, children, ...props }) => {
+    // 检查children是否包含pre标签
+    const hasPreTag = React.Children.toArray(children).some(
+      child => React.isValidElement(child) && child.type === 'pre'
+    );
+    
+    // 如果包含pre标签，则直接返回children而不包装在p标签中
+    if (hasPreTag) {
+      return <>{children}</>;
+    }
+    
+    // 正常情况下返回p标签
+    return <p {...props}>{children}</p>;
+  },
   ol: ({ node, children, ...props }) => {
     return (
       <ol className="list-decimal list-outside ml-4" {...props}>

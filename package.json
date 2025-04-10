@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbo",
+    "dev": "next dev",
     "build": "tsx lib/db/migrate && next build",
     "start": "next start",
     "lint": "next lint && biome lint --write --unsafe",
@@ -56,6 +56,8 @@
     "fast-deep-equal": "^3.1.3",
     "framer-motion": "^11.3.19",
     "geist": "^1.3.1",
+    "graphql": "^16.10.0",
+    "graphql-request": "^7.1.2",
     "lucide-react": "^0.446.0",
     "nanoid": "^5.0.8",
     "next": "15.3.0-canary.31",
@@ -109,5 +111,23 @@
     "tsx": "^4.19.1",
     "typescript": "^5.8.2"
   },
-  "packageManager": "pnpm@9.12.3"
+  "packageManager": "pnpm@9.12.3",
+  "description": "<a href=\"https://chat.vercel.ai/\">   <img alt=\"Next.js 14 and App Router-ready AI chatbot.\" src=\"app/(chat)/opengraph-image.png\">   <h1 align=\"center\">Next.js AI Chatbot</h1> </a>",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "lib": "lib",
+    "test": "tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Snakinya/quant72ai.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Snakinya/quant72ai/issues"
+  },
+  "homepage": "https://github.com/Snakinya/quant72ai#readme"
 }

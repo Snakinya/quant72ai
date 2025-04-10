@@ -4,6 +4,7 @@ import {
   createDataStreamResponse,
   smoothStream,
   streamText,
+  tool,
 } from 'ai';
 import { auth } from '@/app/(auth)/auth';
 import { systemPrompt } from '@/lib/ai/prompts';
@@ -25,9 +26,16 @@ import { requestSuggestions } from '@/lib/ai/tools/request-suggestions';
 import { getWeather } from '@/lib/ai/tools/get-weather';
 import { isProductionEnvironment } from '@/lib/constants';
 import { myProvider } from '@/lib/ai/providers';
-import { getAgentKitTools } from '@/lib/ai/tools/agentkit';
+import { getAgentKitTools, getMyWalletAddress } from '@/lib/ai/tools/agentkit';
+import { getMorphoVaults } from '@/lib/ai/tools/morpho';
+import { z } from 'zod';
 
 export const maxDuration = 60;
+
+// 全局变量存储AgentKit状态
+let agentKitInitialized = false;
+let initializing = false;
+let cachedAgentKitTools: Record<string, any> = {};
 
 export async function POST(request: Request) {
   try {
@@ -82,25 +90,49 @@ export async function POST(request: Request) {
 
     return createDataStreamResponse({
       execute: async (dataStream) => {
-        // 如果选择了AgentKit模型，初始化AgentKit工具
-        let agentKitTools = {};
-        if (selectedChatModel === 'chat-model-agentkit') {
-          try {
-            agentKitTools = await getAgentKitTools({ session, dataStream });
-          } catch (error) {
-            console.error('加载AgentKit工具失败:', error);
+        // 根据选择的模型确定是否使用工具
+        const shouldUseTools = selectedChatModel !== 'chat-model-reasoning';
+        
+        // 确保AgentKit只在使用工具时初始化，而且只初始化一次
+        let agentKitTools: Record<string, any> = {};
+        
+        if (shouldUseTools) {
+          if (!agentKitInitialized && !initializing) {
+            initializing = true;
+            try {
+              console.log("首次初始化AgentKit...");
+              agentKitTools = await getAgentKitTools({ session, dataStream });
+              cachedAgentKitTools = agentKitTools; // 缓存工具
+              agentKitInitialized = true;
+              console.log("可用工具列表:", Object.keys(agentKitTools));
+            } catch (error) {
+              console.error('首次加载AgentKit失败:', error);
+              // 确保即使AgentKit初始化失败，也可以使用基本工具
+              agentKitTools = { getMyWalletAddress, getMorphoVaults };
+            } finally {
+              initializing = false;
+            }
+          } else if (agentKitInitialized) {
+            console.log("使用已初始化的AgentKit");
+            agentKitTools = cachedAgentKitTools; // 使用缓存的工具
+          } else {
+            console.log("AgentKit正在初始化中，稍后再试");
+            // 确保即使AgentKit正在初始化中，也可以使用基本工具
+            agentKitTools = { getMyWalletAddress, getMorphoVaults };
           }
         }
-
+        
+        // 构建激活工具列表
+        const baseTools = ['getWeather', 'createDocument', 'updateDocument', 'requestSuggestions', 'getMyWalletAddress', 'getMorphoVaults'];
+        const agentKitToolNames = Object.keys(agentKitTools).filter(key => !baseTools.includes(key));
+        const activeTools = [...baseTools, ...agentKitToolNames];
+        
         const result = streamText({
           model: myProvider.languageModel(selectedChatModel),
           system: systemPrompt({ selectedChatModel }),
           messages,
           maxSteps: 5,
-          experimental_activeTools:
-            selectedChatModel === 'chat-model-reasoning'
-              ? []
-              : ['getWeather', 'createDocument', 'updateDocument', 'requestSuggestions'],
+          experimental_activeTools: !shouldUseTools ? [] : activeTools as any,
           experimental_transform: smoothStream({ chunking: 'word' }),
           experimental_generateMessageId: generateUUID,
           tools: {
@@ -111,6 +143,7 @@ export async function POST(request: Request) {
               session,
               dataStream,
             }),
+            getMorphoVaults,
             ...agentKitTools,
           },
           onFinish: async ({ response }) => {
@@ -161,13 +194,15 @@ export async function POST(request: Request) {
           sendReasoning: true,
         });
       },
-      onError: () => {
+      onError: (error) => {
+        console.error('Stream error:', error);
         return 'Oops, an error occurred!';
       },
     });
   } catch (error) {
-    return new Response('An error occurred while processing your request!', {
-      status: 404,
+    console.error("API错误:", error);
+    return new Response('服务器处理请求时发生错误', {
+      status: 500,
     });
   }
 }

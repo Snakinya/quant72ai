@@ -20,6 +20,102 @@ import { DocumentPreview } from './document-preview';
 import { MessageReasoning } from './message-reasoning';
 import { UseChatHelpers } from '@ai-sdk/react';
 
+// 钱包信息组件
+const WalletInfo = ({ walletInfo }: { walletInfo: any }) => {
+  return (
+    <div className="flex flex-col gap-4 rounded-2xl p-4 bg-indigo-800 max-w-[500px]">
+      <div className="flex flex-row justify-between items-center">
+        <div className="flex flex-row gap-2 items-center">
+          <div className="size-10 rounded-full bg-indigo-200 flex items-center justify-center">
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              width="24" 
+              height="24" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              className="text-indigo-800"
+            >
+              <rect width="20" height="14" x="2" y="5" rx="2" />
+              <path d="M16 14v1a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-1" />
+            </svg>
+          </div>
+          <div className="text-2xl font-medium text-indigo-50">Wallet Info</div>
+        </div>
+        <div className="text-indigo-50 bg-indigo-700 px-2 py-1 rounded-lg">{walletInfo.network}</div>
+      </div>
+
+      <div className="flex flex-col gap-2 bg-indigo-700 rounded-xl p-3">
+        <div className="text-indigo-200 text-sm">Wallet Address</div>
+        <div className="text-indigo-50 font-mono text-sm break-all">{walletInfo.walletAddress}</div>
+      </div>
+
+      <div className="text-indigo-300 text-xs text-right">Powered by Coinbase AgentKit</div>
+    </div>
+  );
+};
+
+// 代币余额组件
+const TokenBalance = ({ balanceInfo }: { balanceInfo: any }) => {
+  return (
+    <div className="flex flex-col gap-4 rounded-2xl p-4 bg-blue-800 max-w-[500px]">
+      <div className="flex flex-row justify-between items-center">
+        <div className="flex flex-row gap-2 items-center">
+          <div className="size-10 rounded-full bg-blue-200 flex items-center justify-center">
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              width="24" 
+              height="24" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              className="text-blue-800"
+            >
+              <circle cx="12" cy="12" r="8" />
+              <path d="M9.5 9.5 14.5 14.5" />
+              <path d="M14.5 9.5 9.5 14.5" />
+            </svg>
+          </div>
+          <div className="text-2xl font-medium text-blue-50">Token Balance</div>
+        </div>
+        <div className="text-blue-50 bg-blue-700 px-2 py-1 rounded-lg">{balanceInfo.network?.networkId || 'base-sepolia'}</div>
+      </div>
+
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2 bg-blue-700 rounded-xl p-3">
+          <div className="text-blue-200 text-sm">Wallet Address</div>
+          <div className="text-blue-50 font-mono text-sm break-all">{balanceInfo.address}</div>
+        </div>
+
+        <div className="flex flex-col gap-2 bg-blue-700 rounded-xl p-3">
+          <div className="text-blue-200 text-sm">Native Token Balance</div>
+          <div className="text-blue-50 font-mono text-sm">{balanceInfo.nativeBalance || '0 WEI'}</div>
+        </div>
+        
+        {balanceInfo.tokens && balanceInfo.tokens.length > 0 && (
+          <div className="flex flex-col gap-2 bg-blue-700 rounded-xl p-3">
+            <div className="text-blue-200 text-sm">Other Tokens</div>
+            {balanceInfo.tokens.map((token: any, index: number) => (
+              <div key={index} className="flex justify-between items-center">
+                <span className="text-blue-50">{token.symbol}</span>
+                <span className="text-blue-50 font-mono">{token.balance}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="text-blue-300 text-xs text-right">Powered by Coinbase AgentKit</div>
+    </div>
+  );
+};
+
 const PurePreviewMessage = ({
   chatId,
   message,
@@ -176,6 +272,10 @@ const PurePreviewMessage = ({
                           args={args}
                           isReadonly={isReadonly}
                         />
+                      ) : toolName === 'getMyWalletAddress' ? (
+                        <WalletInfo walletInfo={args} />
+                      ) : toolName === 'getMyTokenBalance' || toolName === 'getTokenBalance' ? (
+                        <TokenBalance balanceInfo={args} />
                       ) : null}
                     </div>
                   );
@@ -205,6 +305,10 @@ const PurePreviewMessage = ({
                           result={result}
                           isReadonly={isReadonly}
                         />
+                      ) : toolName === 'getMyWalletAddress' ? (
+                        <WalletInfo walletInfo={result} />
+                      ) : toolName === 'getMyTokenBalance' || toolName === 'getTokenBalance' ? (
+                        <TokenBalance balanceInfo={result} />
                       ) : (
                         <pre>{JSON.stringify(result, null, 2)}</pre>
                       )}
