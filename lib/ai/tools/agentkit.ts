@@ -31,66 +31,50 @@ export let currentNetworkId: string = '';
 // Initialize AgentKit and get tools
 export async function initializeAgentKit() {
   try {
-    // If already initialized, return existing tools
-    if (agentKit) {
-      console.log("Using existing AgentKit instance");
-      console.log(`当前网络ID: ${currentNetworkId}`);
-      console.log(`当前钱包地址: ${smartWalletAddress}`);
+    if (agentKit && walletProvider && smartWalletAddress) {
+      console.log("✅ AgentKit 已初始化，直接复用");
       return getVercelAITools(agentKit);
     }
 
-    console.log("Initializing AgentKit...");
+    console.log("🚀 正在初始化 AgentKit...");
     const networkId = process.env.NETWORK_ID || "base-mainnet";
     currentNetworkId = networkId;
-    console.log(`使用的网络ID: ${networkId}`);
     const walletDataFile = `wallet_data_${networkId.replace(/-/g, "_")}.txt`;
-    console.log(`钱包数据文件: ${walletDataFile}`);
 
     let walletData: WalletData | null = null;
     let privateKey: Hex | null = null;
 
-    // Read existing wallet data
     if (fs.existsSync(walletDataFile)) {
-      console.log(`钱包数据文件存在，尝试读取: ${walletDataFile}`);
+      console.log(`📁 钱包数据文件存在: ${walletDataFile}`);
       try {
         walletData = JSON.parse(fs.readFileSync(walletDataFile, "utf8")) as WalletData;
         privateKey = walletData.privateKey;
-        console.log(`读取现有钱包数据成功，钱包地址: ${walletData.smartWalletAddress}`);
+        console.log(`🎉 读取成功，钱包地址: ${walletData.smartWalletAddress}`);
       } catch (error) {
-        console.error(`Error reading ${networkId} wallet data:`, error);
+        console.error(`❌ 读取钱包数据失败:`, error);
         walletData = null;
       }
-    } else {
-      console.log(`钱包数据文件不存在: ${walletDataFile}`);
     }
 
     if (!privateKey) {
       if (walletData?.smartWalletAddress) {
         throw new Error(
-          `Smart wallet found but no private key provided. Please provide a private key or delete ${walletDataFile} and try again.`
+          `钱包文件存在但缺失私钥，请检查 ${walletDataFile} 文件。`
         );
       }
-      // Safely handle private key
+
       if (process.env.PRIVATE_KEY && process.env.PRIVATE_KEY.startsWith('0x')) {
         privateKey = process.env.PRIVATE_KEY as Hex;
-        console.log(`使用环境变量中的私钥`);
+        console.log(`🔑 使用环境变量中的私钥`);
       } else {
         privateKey = generatePrivateKey();
-        console.log(`生成了新的私钥: ${privateKey}`);
+        console.log(`🆕 生成新私钥: ${privateKey}`);
       }
     }
 
     const signer = privateKeyToAccount(privateKey);
-    console.log(`Signer详情:`);
-    console.log(`- 地址: ${signer.address}`);
-    console.log(`- 类型: ${signer.type}`);
-
-    // 在第一次运行时，直接使用signer地址作为smartWalletAddress
-    if (!walletData || !walletData.smartWalletAddress) {
-      console.log(`第一次运行，使用signer地址作为smartWalletAddress: ${signer.address}`);
+    if (!walletData?.smartWalletAddress) {
       smartWalletAddress = signer.address as Address;
-      
-      // 保存钱包数据
       fs.writeFileSync(
         walletDataFile,
         JSON.stringify({
@@ -98,28 +82,19 @@ export async function initializeAgentKit() {
           smartWalletAddress,
         } as WalletData)
       );
-      console.log(`已保存初始钱包数据到: ${walletDataFile}`);
+      console.log(`💾 保存钱包数据成功: ${walletDataFile}`);
     } else {
       smartWalletAddress = walletData.smartWalletAddress;
     }
 
-    // 在配置前输出所有参数详情
-    console.log(`==============配置智能钱包提供商的参数==============`);
-    console.log(`networkId: ${networkId}`);
-    console.log(`signer地址: ${signer.address}`);
-    console.log(`smartWalletAddress: ${smartWalletAddress}`);
-    console.log(`paymasterUrl: undefined`);
-    console.log(`======================================================`);
-
-    // Configure smart wallet provider
-    console.log(`正在配置智能钱包提供商...`);
+    console.log(`⚙️ 配置智能钱包提供商...`);
     walletProvider = await SmartWalletProvider.configureWithWallet({
       networkId,
       signer,
       smartWalletAddress: smartWalletAddress,
-      paymasterUrl: undefined, // Transaction sponsorship: https://docs.cdp.coinbase.com/paymaster/docs/welcome
+      paymasterUrl: undefined,
     });
-    console.log(`智能钱包提供商配置完成`);
+    console.log(`✅ 智能钱包配置完成`);
 
     agentKit = await AgentKit.from({
       walletProvider,
@@ -134,14 +109,13 @@ export async function initializeAgentKit() {
         morphoActionProvider(),
       ],
     });
-    console.log(`AgentKit初始化完成`);
 
-    // 重新保存钱包数据以防有变化
+    console.log(`✅ AgentKit 初始化完成`);
+
     const currentAddress = await walletProvider.getAddress() as Address;
     if (currentAddress !== smartWalletAddress) {
-      console.log(`注意: 初始化后的地址(${currentAddress})与之前的地址(${smartWalletAddress})不同，更新地址`);
+      console.log(`⚠️ 钱包地址变化，更新文件`);
       smartWalletAddress = currentAddress;
-      
       fs.writeFileSync(
         walletDataFile,
         JSON.stringify({
@@ -149,19 +123,16 @@ export async function initializeAgentKit() {
           smartWalletAddress,
         } as WalletData)
       );
-      console.log(`已更新钱包数据到: ${walletDataFile}`);
     }
 
-    console.log(`智能钱包地址: ${smartWalletAddress}`);
-    console.log(`网络: ${networkId}`);
-    console.log(`链ID: ${currentNetworkId === 'base-sepolia' ? 84532 : 8453}`);
-    console.log(`启用的操作提供商: cdpApi, erc721, pyth, wallet, morpho`);
-    
-    // Get Vercel AI SDK tools
-    const tools = getVercelAITools(agentKit);
-    return tools;
+    console.log(`💡 钱包地址: ${smartWalletAddress}`);
+    console.log(`🌐 网络: ${networkId}`);
+    console.log(`🔗 链 ID: ${currentNetworkId === 'base-sepolia' ? 84532 : 8453}`);
+    console.log(`🧩 启用 action providers: cdpApi, erc721, pyth, wallet, morpho`);
+
+    return getVercelAITools(agentKit);
   } catch (error) {
-    console.error("初始化AgentKit失败:", error);
+    console.error("❌ AgentKit 初始化失败:", error);
     throw error;
   }
 }
@@ -172,9 +143,14 @@ export const getMyWalletAddress = tool({
   parameters: z.object({}),
   execute: async () => {
     if (!smartWalletAddress || !walletProvider) {
-      throw new Error('Wallet not initialized');
+      console.log('🚨 钱包未初始化，在 getMyWalletAddress 执行初始化...');
+      await initializeAgentKit();
     }
-    
+
+    if (!smartWalletAddress || !walletProvider) {
+      throw new Error('Wallet still not initialized after attempt.');
+    }
+
     return {
       walletAddress: smartWalletAddress,
       network: currentNetworkId,
@@ -188,13 +164,17 @@ export const getMyTokenBalance = tool({
   parameters: z.object({}),
   execute: async () => {
     if (!smartWalletAddress || !walletProvider) {
-      throw new Error('Wallet not initialized');
+      console.log('🚨 钱包未初始化，在 getMyTokenBalance 执行初始化...');
+      await initializeAgentKit();
     }
-    
+
+    if (!smartWalletAddress || !walletProvider) {
+      throw new Error('Wallet still not initialized after attempt.');
+    }
+
     try {
-      // Get native token balance (ETH/BASE etc.)
       const nativeBalance = await walletProvider.getBalance();
-      
+
       return {
         provider: 'cdp_smart_wallet_provider',
         address: smartWalletAddress,
@@ -204,10 +184,10 @@ export const getMyTokenBalance = tool({
           chainId: currentNetworkId === 'base-sepolia' ? 84532 : 8453
         },
         nativeBalance: nativeBalance ? `${nativeBalance} WEI` : '0 WEI',
-        tokens: [] // For future ERC20 token balances, can be extended here
+        tokens: []
       };
     } catch (error) {
-      console.error("Failed to get token balance:", error);
+      console.error("❌ Failed to get token balance:", error);
       return {
         provider: 'cdp_smart_wallet_provider',
         address: smartWalletAddress,
@@ -228,22 +208,23 @@ interface AgentKitToolsProps {
   dataStream: DataStreamWriter;
 }
 
-// Export AgentKit tools wrapper for use in chat/route.ts
+// AgentKit tools export function
 export async function getAgentKitTools({ session, dataStream }: AgentKitToolsProps) {
   try {
-    // Check for required environment variables
     if (!process.env.CDP_API_KEY_NAME || !process.env.CDP_API_KEY_PRIVATE_KEY) {
-      console.warn("Missing environment variables required for AgentKit, wallet features will not be initialized");
+      console.warn("⚠️ 缺少环境变量，跳过 AgentKit 初始化");
       return {
         getMyWalletAddress,
         getMyTokenBalance,
         getMorphoVaults: getMorphoVaultsFromAPI,
       };
     }
-    
+
+    // ✅ 强制初始化，确保冷启动可用
+    await initializeAgentKit();
+
     const agentKitTools = await initializeAgentKit();
-    
-    // Merge AgentKit tools and custom tools
+
     return {
       ...agentKitTools,
       getMyWalletAddress,
@@ -251,12 +232,11 @@ export async function getAgentKitTools({ session, dataStream }: AgentKitToolsPro
       getMorphoVaults: getMorphoVaultsFromAPI,
     };
   } catch (error) {
-    console.error("Failed to get AgentKit tools:", error);
-    // Even if AgentKit initialization fails, still return custom tools
+    console.error("❌ 获取 AgentKit tools 失败:", error);
     return {
       getMyWalletAddress,
       getMyTokenBalance,
       getMorphoVaults: getMorphoVaultsFromAPI,
     };
   }
-} 
+}
