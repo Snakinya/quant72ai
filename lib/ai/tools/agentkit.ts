@@ -15,9 +15,11 @@ import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import * as fs from "fs";
 import { z } from 'zod';
 import { getMorphoVaults as getMorphoVaultsFromAPI } from './morpho';
+import { getWalletByUserId, saveWallet, WalletData } from '../../db/wallet-queries';
+import { auth } from '@/app/(auth)/auth';
 
-// Wallet data type
-type WalletData = {
+// 全局变量类型定义
+type AgentKitState = {
   privateKey: Hex;
   smartWalletAddress: Address;
 };
@@ -39,59 +41,94 @@ export async function initializeAgentKit() {
     console.log("🚀 正在初始化 AgentKit...");
     const networkId = process.env.NETWORK_ID || "base-mainnet";
     currentNetworkId = networkId;
-    const walletDataFile = `/tmp/wallet_data_${networkId.replace(/-/g, "_")}.txt`;
-
-    let walletData: WalletData | null = null;
+    
+    // 获取当前用户信息
+    const session = await auth();
+    const userId = session?.user?.id;
+    
     let privateKey: Hex | null = null;
+    let walletData: AgentKitState | null = null;
 
-    if (fs.existsSync(walletDataFile)) {
-      console.log(`📁 钱包数据文件存在: ${walletDataFile}`);
-      try {
-        walletData = JSON.parse(fs.readFileSync(walletDataFile, "utf8")) as WalletData;
-        privateKey = walletData.privateKey;
-        console.log(`🎉 读取成功，钱包地址: ${walletData.smartWalletAddress}`);
-      } catch (error) {
-        console.error(`❌ 读取钱包数据失败:`, error);
-        walletData = null;
+    // 如果有用户登录，尝试从数据库获取钱包信息
+    if (userId) {
+      console.log(`👤 用户已登录，ID: ${userId}`);
+      const userWallet = await getWalletByUserId(userId);
+      
+      if (userWallet) {
+        console.log(`🎉 找到用户钱包，地址: ${userWallet.smartWalletAddress}`);
+        privateKey = userWallet.privateKey as Hex;
+        smartWalletAddress = userWallet.smartWalletAddress as Address;
+        walletData = {
+          privateKey,
+          smartWalletAddress
+        };
+      } else {
+        console.log(`⚠️ 用户没有钱包，将创建新钱包`);
+      }
+    } else {
+      console.log(`⚠️ 用户未登录，将使用临时钱包`);
+      // 如果用户未登录，尝试使用临时文件
+      const walletDataFile = `/tmp/wallet_data_${networkId.replace(/-/g, "_")}.txt`;
+      
+      if (fs.existsSync(walletDataFile)) {
+        console.log(`📁 临时钱包数据文件存在: ${walletDataFile}`);
+        try {
+          const tempWalletData = JSON.parse(fs.readFileSync(walletDataFile, "utf8"));
+          privateKey = tempWalletData.privateKey as Hex;
+          smartWalletAddress = tempWalletData.smartWalletAddress as Address;
+          walletData = {
+            privateKey,
+            smartWalletAddress
+          };
+          console.log(`🎉 读取临时钱包成功，地址: ${smartWalletAddress}`);
+        } catch (error) {
+          console.error(`❌ 读取临时钱包数据失败:`, error);
+        }
       }
     }
 
+    // 如果没有找到私钥，生成新的
     if (!privateKey) {
-      if (walletData?.smartWalletAddress) {
-        throw new Error(
-          `钱包文件存在但缺失私钥，请检查 ${walletDataFile} 文件。`
-        );
-      }
-
       if (process.env.PRIVATE_KEY && process.env.PRIVATE_KEY.startsWith('0x')) {
         privateKey = process.env.PRIVATE_KEY as Hex;
         console.log(`🔑 使用环境变量中的私钥`);
       } else {
         privateKey = generatePrivateKey();
-        console.log(`🆕 生成新私钥: ${privateKey}`);
+        console.log(`🆕 生成新私钥`);
+      }
+      
+      const signer = privateKeyToAccount(privateKey);
+      smartWalletAddress = signer.address as Address;
+      
+      // 如果用户已登录，将钱包信息保存到数据库
+      if (userId) {
+        await saveWallet({
+          userId,
+          privateKey,
+          smartWalletAddress,
+          networkId
+        });
+        console.log(`💾 保存用户钱包到数据库成功`);
+      } else {
+        // 否则保存到临时文件
+        const walletDataFile = `/tmp/wallet_data_${networkId.replace(/-/g, "_")}.txt`;
+        fs.writeFileSync(
+          walletDataFile,
+          JSON.stringify({
+            privateKey,
+            smartWalletAddress,
+          })
+        );
+        console.log(`💾 保存临时钱包数据成功: ${walletDataFile}`);
       }
     }
 
-    const signer = privateKeyToAccount(privateKey);
-    if (!walletData?.smartWalletAddress) {
-      smartWalletAddress = signer.address as Address;
-      fs.writeFileSync(
-        walletDataFile,
-        JSON.stringify({
-          privateKey,
-          smartWalletAddress,
-        } as WalletData)
-      );
-      console.log(`💾 保存钱包数据成功: ${walletDataFile}`);
-    } else {
-      smartWalletAddress = walletData.smartWalletAddress;
-    }
-
     console.log(`⚙️ 配置智能钱包提供商...`);
+    const signer = privateKeyToAccount(privateKey);
     walletProvider = await SmartWalletProvider.configureWithWallet({
       networkId,
       signer,
-      smartWalletAddress: smartWalletAddress,
+      smartWalletAddress: smartWalletAddress || undefined,
       paymasterUrl: undefined,
     });
     console.log(`✅ 智能钱包配置完成`);
@@ -112,17 +149,32 @@ export async function initializeAgentKit() {
 
     console.log(`✅ AgentKit 初始化完成`);
 
+    // 检查钱包地址是否变化
     const currentAddress = await walletProvider.getAddress() as Address;
     if (currentAddress !== smartWalletAddress) {
-      console.log(`⚠️ 钱包地址变化，更新文件`);
+      console.log(`⚠️ 钱包地址变化，更新记录`);
       smartWalletAddress = currentAddress;
-      fs.writeFileSync(
-        walletDataFile,
-        JSON.stringify({
+      
+      // 如果用户已登录，更新数据库中的钱包地址
+      if (userId) {
+        await saveWallet({
+          userId,
           privateKey,
           smartWalletAddress,
-        } as WalletData)
-      );
+          networkId
+        });
+        console.log(`💾 更新用户钱包地址到数据库成功`);
+      } else {
+        // 否则更新临时文件
+        const walletDataFile = `/tmp/wallet_data_${networkId.replace(/-/g, "_")}.txt`;
+        fs.writeFileSync(
+          walletDataFile,
+          JSON.stringify({
+            privateKey,
+            smartWalletAddress,
+          })
+        );
+      }
     }
 
     console.log(`💡 钱包地址: ${smartWalletAddress}`);
