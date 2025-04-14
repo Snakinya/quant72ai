@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
         console.log(`Time range: ${firstDate} to ${lastDate}`);
         
         // 打印价格范围
-        const closes = data.candlesticks.map(c => parseFloat(c.close));
+        const closes = data.candlesticks.map((c: any) => parseFloat(c.close));
         const minPrice = Math.min(...closes);
         const maxPrice = Math.max(...closes);
         console.log(`Price range: ${minPrice} to ${maxPrice}`);
