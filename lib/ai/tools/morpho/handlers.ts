@@ -9,8 +9,6 @@ function getChainIdFromNetworkId(networkId: string): number {
   switch (networkId) {
     case 'base-mainnet':
       return 8453;
-    case 'base-sepolia':
-      return 84532;
     default:
       return 8453; // 默认为Base网络
   }

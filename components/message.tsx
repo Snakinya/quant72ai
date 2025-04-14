@@ -11,6 +11,7 @@ import { Markdown } from './markdown';
 import { MessageActions } from './message-actions';
 import { PreviewAttachment } from './preview-attachment';
 import { Weather } from './weather';
+import { TokenInfo } from './token-info';
 import equal from 'fast-deep-equal';
 import { cn } from '@/lib/utils';
 import { Button } from './ui/button';
@@ -19,6 +20,11 @@ import { MessageEditor } from './message-editor';
 import { DocumentPreview } from './document-preview';
 import { MessageReasoning } from './message-reasoning';
 import { UseChatHelpers } from '@ai-sdk/react';
+import { KlineChart } from './kline-chart';
+import Image from 'next/image';
+import { RiskProfileCard } from './risk-profile-card';
+import { AllocationSuggestion } from './allocation-suggestion';
+import { BacktestResult } from './backtest-result';
 
 // 钱包信息组件
 const WalletInfo = ({ walletInfo }: { walletInfo: any }) => {
@@ -154,10 +160,14 @@ const PurePreviewMessage = ({
           )}
         >
           {message.role === 'assistant' && (
-            <div className="size-8 flex items-center rounded-full justify-center ring-1 shrink-0 ring-border bg-background">
-              <div className="translate-y-px">
-                <SparklesIcon size={14} />
-              </div>
+            <div className="size-8 flex items-center rounded-full justify-center ring-1 shrink-0 ring-border bg-background overflow-hidden">
+              <Image 
+                src="/images/quant72_logo.jpg" 
+                alt="Quant72 Logo" 
+                width={48} 
+                height={48}
+                className="object-cover"
+              />
             </div>
           )}
 
@@ -249,6 +259,26 @@ const PurePreviewMessage = ({
                 if (state === 'call') {
                   const { args } = toolInvocation;
 
+                  if (toolName === 'getTokenInfo') {
+                    return (
+                      <div key={key} className="flex flex-col gap-4">
+                        <div className="text-sm text-muted-foreground">
+                          Getting token info...
+                        </div>
+                      </div>
+                    );
+                  }
+                  
+                  if (toolName === 'analyzeKline') {
+                    return (
+                      <div key={key} className="flex flex-col gap-4">
+                        <div className="text-sm text-muted-foreground">
+                          Getting K-line data...
+                        </div>
+                      </div>
+                    );
+                  }
+
                   return (
                     <div
                       key={toolCallId}
@@ -284,6 +314,64 @@ const PurePreviewMessage = ({
                 if (state === 'result') {
                   const { result } = toolInvocation;
 
+                  if (toolName === 'getTokenInfo' && result.pools?.[0]) {
+                    return (
+                      <div key={key} className="flex flex-col gap-4">
+                        <TokenInfo data={result.pools[0]} />
+                      </div>
+                    );
+                  }
+                  
+                  if (toolName === 'analyzeKline') {
+                    const tokenSymbol = result.tokenSymbol || 'Unknown';
+                    const timeBucket = result.timeBucket || '15s';
+                    
+                    // 准备风险评估所需的数据
+                    const riskData = {
+                      symbol: tokenSymbol,
+                      price: result.analysis.indicators.price,
+                      priceChange24h: result.analysis.indicators.priceChange24h,
+                      rsi: result.analysis.indicators.rsi,
+                      // 基于RSI和MACD估算波动性
+                      volatility: result.analysis.indicators.rsi > 70 || result.analysis.indicators.rsi < 30 ? 0.7 : 0.4,
+                      // 基于趋势判断市场状态
+                      marketTrend: result.analysis.trend.toLowerCase()
+                    };
+                    
+                    // 确定风险水平
+                    let riskLevel: 'low' | 'medium' | 'high';
+                    if (riskData.rsi < 30 || riskData.rsi > 70) {
+                      // RSI处于极端区域，高风险
+                      riskLevel = 'high';
+                    } else if (Math.abs(riskData.priceChange24h) > 8) {
+                      // 价格变化较大，中等风险
+                      riskLevel = 'medium';
+                    } else {
+                      // 相对稳定，低风险
+                      riskLevel = 'low';
+                    }
+                    
+                    return (
+                      <div key={key} className="flex flex-col gap-4">
+                        <KlineChart 
+                          data={result} 
+                          tokenSymbol={tokenSymbol}
+                          timeBucket={timeBucket}
+                        />
+                        
+                        <RiskProfileCard tokenData={riskData} />
+                      </div>
+                    );
+                  }
+                  
+                  if (toolName === 'backtestRSIStrategy') {
+                    return (
+                      <div key={key} className="flex flex-col gap-4">
+                        <BacktestResult data={result} />
+                      </div>
+                    );
+                  }
+
                   return (
                     <div key={toolCallId}>
                       {toolName === 'getWeather' ? (
@@ -309,6 +397,89 @@ const PurePreviewMessage = ({
                         <WalletInfo walletInfo={result} />
                       ) : toolName === 'getMyTokenBalance' || toolName === 'getTokenBalance' ? (
                         <TokenBalance balanceInfo={result} />
+                      ) : toolName === 'getMorphoVaults' ? (
+                        <div className="rounded-md border p-4 bg-background">
+                          <div className="flex flex-row items-center justify-between mb-3">
+                            <div className="text-lg font-medium">Morpho Vaults</div>
+                            <div className="bg-primary/10 text-primary px-2 py-1 rounded-md text-sm">
+                              {(() => {
+                                // 尝试解析结果
+                                let parsedResult;
+                                try {
+                                  // 如果结果是字符串，尝试解析JSON
+                                  parsedResult = typeof result === 'string' ? JSON.parse(result) : result;
+                                  return `Found: ${parsedResult.vaultsCount || 0} vaults`;
+                                } catch (e) {
+                                  console.error("Failed to parse Morpho result:", e);
+                                  return "Found: 0 vaults";
+                                }
+                              })()}
+                            </div>
+                          </div>
+                          
+                          {(() => {
+                            // 尝试解析结果
+                            let parsedResult;
+                            try {
+                              // 如果结果是字符串，尝试解析JSON
+                              parsedResult = typeof result === 'string' ? JSON.parse(result) : result;
+                              
+                              if (parsedResult.vaults && parsedResult.vaults.length > 0) {
+                                return (
+                                  <>
+                                    <div className="space-y-4">
+                                      {parsedResult.vaults.slice(0, 3).map((vault: any, index: number) => (
+                                        <div key={index} className="border rounded-lg p-3 bg-card">
+                                          <div className="flex justify-between items-center mb-2">
+                                            <div className="font-medium">{vault.name}</div>
+                                            <div className="text-sm bg-secondary/50 px-2 py-0.5 rounded text-secondary-foreground">
+                                              {vault.tvlUsd}
+                                            </div>
+                                          </div>
+                                          
+                                          <div className="text-xs text-muted-foreground mb-1.5">
+                                            {vault.metadata?.description || ""}
+                                          </div>
+                                          
+                                          <div className="flex flex-wrap gap-2 text-xs">
+                                            <div className="bg-muted px-2 py-0.5 rounded-full font-mono">
+                                              {vault.address.substring(0, 6)}...{vault.address.substring(vault.address.length - 4)}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ))}
+                                      
+                                      {parsedResult.vaults.length > 3 && (
+                                        <div className="text-center text-sm text-muted-foreground pt-2">
+                                          + {parsedResult.vaults.length - 3} more vaults
+                                        </div>
+                                      )}
+                                    </div>
+                                    
+                                    <div className="mt-3 flex justify-end">
+                                      <div className="text-xs text-muted-foreground">
+                                        Network: {parsedResult.network}
+                                      </div>
+                                    </div>
+                                  </>
+                                );
+                              } else {
+                                return (
+                                  <div className="text-center py-6 text-muted-foreground">
+                                    No vaults found matching your criteria.
+                                  </div>
+                                );
+                              }
+                            } catch (e) {
+                              console.error("Failed to render Morpho vaults:", e);
+                              return (
+                                <div className="text-center py-6 text-muted-foreground">
+                                  Error parsing vault data. Please try again.
+                                </div>
+                              );
+                            }
+                          })()}
+                        </div>
                       ) : (
                         <pre>{JSON.stringify(result, null, 2)}</pre>
                       )}
@@ -365,9 +536,15 @@ export const ThinkingMessage = () => {
           },
         )}
       >
-        <div className="size-8 flex items-center rounded-full justify-center ring-1 shrink-0 ring-border">
-          <SparklesIcon size={14} />
-        </div>
+      <div className="size-8 flex items-center rounded-full justify-center ring-1 shrink-0 ring-border bg-background overflow-hidden">
+        <Image 
+          src="/images/quant72_logo.jpg" 
+          alt="Quant72 Logo" 
+          width={32} 
+          height={32}
+          className="object-cover opacity-50"
+        />
+      </div>
 
         <div className="flex flex-col gap-2 w-full">
           <div className="flex flex-col gap-4 text-muted-foreground">

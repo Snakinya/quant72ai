@@ -34,25 +34,34 @@ export async function initializeAgentKit() {
     // If already initialized, return existing tools
     if (agentKit) {
       console.log("Using existing AgentKit instance");
+      console.log(`当前网络ID: ${currentNetworkId}`);
+      console.log(`当前钱包地址: ${smartWalletAddress}`);
       return getVercelAITools(agentKit);
     }
 
     console.log("Initializing AgentKit...");
-    const networkId = process.env.NETWORK_ID || "base-sepolia";
+    const networkId = process.env.NETWORK_ID || "base-mainnet";
     currentNetworkId = networkId;
+    console.log(`使用的网络ID: ${networkId}`);
     const walletDataFile = `wallet_data_${networkId.replace(/-/g, "_")}.txt`;
+    console.log(`钱包数据文件: ${walletDataFile}`);
 
     let walletData: WalletData | null = null;
     let privateKey: Hex | null = null;
 
     // Read existing wallet data
     if (fs.existsSync(walletDataFile)) {
+      console.log(`钱包数据文件存在，尝试读取: ${walletDataFile}`);
       try {
         walletData = JSON.parse(fs.readFileSync(walletDataFile, "utf8")) as WalletData;
         privateKey = walletData.privateKey;
+        console.log(`读取现有钱包数据成功，钱包地址: ${walletData.smartWalletAddress}`);
       } catch (error) {
         console.error(`Error reading ${networkId} wallet data:`, error);
+        walletData = null;
       }
+    } else {
+      console.log(`钱包数据文件不存在: ${walletDataFile}`);
     }
 
     if (!privateKey) {
@@ -64,20 +73,53 @@ export async function initializeAgentKit() {
       // Safely handle private key
       if (process.env.PRIVATE_KEY && process.env.PRIVATE_KEY.startsWith('0x')) {
         privateKey = process.env.PRIVATE_KEY as Hex;
+        console.log(`使用环境变量中的私钥`);
       } else {
         privateKey = generatePrivateKey();
+        console.log(`生成了新的私钥: ${privateKey}`);
       }
     }
 
     const signer = privateKeyToAccount(privateKey);
+    console.log(`Signer详情:`);
+    console.log(`- 地址: ${signer.address}`);
+    console.log(`- 类型: ${signer.type}`);
+
+    // 在第一次运行时，直接使用signer地址作为smartWalletAddress
+    if (!walletData || !walletData.smartWalletAddress) {
+      console.log(`第一次运行，使用signer地址作为smartWalletAddress: ${signer.address}`);
+      smartWalletAddress = signer.address as Address;
+      
+      // 保存钱包数据
+      fs.writeFileSync(
+        walletDataFile,
+        JSON.stringify({
+          privateKey,
+          smartWalletAddress,
+        } as WalletData)
+      );
+      console.log(`已保存初始钱包数据到: ${walletDataFile}`);
+    } else {
+      smartWalletAddress = walletData.smartWalletAddress;
+    }
+
+    // 在配置前输出所有参数详情
+    console.log(`==============配置智能钱包提供商的参数==============`);
+    console.log(`networkId: ${networkId}`);
+    console.log(`signer地址: ${signer.address}`);
+    console.log(`smartWalletAddress: ${smartWalletAddress}`);
+    console.log(`paymasterUrl: undefined`);
+    console.log(`======================================================`);
 
     // Configure smart wallet provider
+    console.log(`正在配置智能钱包提供商...`);
     walletProvider = await SmartWalletProvider.configureWithWallet({
       networkId,
       signer,
-      smartWalletAddress: walletData?.smartWalletAddress,
+      smartWalletAddress: smartWalletAddress,
       paymasterUrl: undefined, // Transaction sponsorship: https://docs.cdp.coinbase.com/paymaster/docs/welcome
     });
+    console.log(`智能钱包提供商配置完成`);
 
     agentKit = await AgentKit.from({
       walletProvider,
@@ -92,26 +134,34 @@ export async function initializeAgentKit() {
         morphoActionProvider(),
       ],
     });
+    console.log(`AgentKit初始化完成`);
 
-    // Save wallet data
-    smartWalletAddress = await walletProvider.getAddress() as Address;
-    fs.writeFileSync(
-      walletDataFile,
-      JSON.stringify({
-        privateKey,
-        smartWalletAddress,
-      } as WalletData)
-    );
+    // 重新保存钱包数据以防有变化
+    const currentAddress = await walletProvider.getAddress() as Address;
+    if (currentAddress !== smartWalletAddress) {
+      console.log(`注意: 初始化后的地址(${currentAddress})与之前的地址(${smartWalletAddress})不同，更新地址`);
+      smartWalletAddress = currentAddress;
+      
+      fs.writeFileSync(
+        walletDataFile,
+        JSON.stringify({
+          privateKey,
+          smartWalletAddress,
+        } as WalletData)
+      );
+      console.log(`已更新钱包数据到: ${walletDataFile}`);
+    }
 
-    console.log(`Smart wallet address: ${smartWalletAddress}`);
-    console.log(`Network: ${networkId}`);
-    console.log(`Enabled action providers: cdpApi, erc721, pyth, wallet, morpho`);
+    console.log(`智能钱包地址: ${smartWalletAddress}`);
+    console.log(`网络: ${networkId}`);
+    console.log(`链ID: ${currentNetworkId === 'base-sepolia' ? 84532 : 8453}`);
+    console.log(`启用的操作提供商: cdpApi, erc721, pyth, wallet, morpho`);
     
     // Get Vercel AI SDK tools
     const tools = getVercelAITools(agentKit);
     return tools;
   } catch (error) {
-    console.error("Failed to initialize AgentKit:", error);
+    console.error("初始化AgentKit失败:", error);
     throw error;
   }
 }

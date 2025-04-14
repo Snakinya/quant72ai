@@ -7,8 +7,6 @@ function getNetworkNameById(chainId: number): string {
   switch (chainId) {
     case 8453:
       return 'base-mainnet';
-    case 84532:
-      return 'base-sepolia';
     default:
       return `未知网络(${chainId})`;
   }
