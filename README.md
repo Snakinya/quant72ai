@@ -1,61 +1,123 @@
-<a href="https://chat.vercel.ai/">
-  <img alt="Next.js 14 and App Router-ready AI chatbot." src="app/(chat)/opengraph-image.png">
-  <h1 align="center">Next.js AI Chatbot</h1>
-</a>
-
 <p align="center">
-  An Open-Source AI Chatbot Template Built With Next.js and the AI SDK by Vercel.
+  <img alt="Quant72 AI" src="public/quant72_logo.jpg" width="200">
+  <h1 align="center">Quant72 AI</h1>
 </p>
 
 <p align="center">
-  <a href="#features"><strong>Features</strong></a> ·
-  <a href="#model-providers"><strong>Model Providers</strong></a> ·
-  <a href="#deploy-your-own"><strong>Deploy Your Own</strong></a> ·
-  <a href="#running-locally"><strong>Running locally</strong></a>
+  Blockchain-based Quantitative Trading AI Assistant, providing token analysis, technical indicator calculation, and strategy backtesting
+</p>
+
+<p align="center">
+  <a href="#project-overview"><strong>Project Overview</strong></a> ·
+  <a href="#key-features"><strong>Key Features</strong></a> ·
+  <a href="#installation"><strong>Installation</strong></a> ·
+  <a href="#usage-guide"><strong>Usage Guide</strong></a>
 </p>
 <br/>
 
-## Features
+## Project Overview
 
-- [Next.js](https://nextjs.org) App Router
-  - Advanced routing for seamless navigation and performance
-  - React Server Components (RSCs) and Server Actions for server-side rendering and increased performance
-- [AI SDK](https://sdk.vercel.ai/docs)
-  - Unified API for generating text, structured objects, and tool calls with LLMs
-  - Hooks for building dynamic chat and generative user interfaces
-  - Supports xAI (default), OpenAI, Fireworks, and other model providers
-- [shadcn/ui](https://ui.shadcn.com)
-  - Styling with [Tailwind CSS](https://tailwindcss.com)
-  - Component primitives from [Radix UI](https://radix-ui.com) for accessibility and flexibility
-- Data Persistence
-  - [Vercel Postgres powered by Neon](https://vercel.com/storage/postgres) for saving chat history and user data
-  - [Vercel Blob](https://vercel.com/storage/blob) for efficient file storage
-- [NextAuth.js](https://github.com/nextauthjs/next-auth)
-  - Simple and secure authentication
+Quant72 AI is a blockchain-based quantitative trading AI assistant designed specifically for cryptocurrency traders and investors. The platform combines advanced AI technology with quantitative analysis tools to help users perform market analysis, token evaluation, and strategy backtesting, enabling more informed trading decisions.
 
-## Model Providers
+Built on Next.js, the platform implements intelligent conversation functionality through AI SDK and obtains real-time market data via blockchain APIs. Whether you're an experienced trader or a cryptocurrency novice, Quant72 AI provides professional analytical support and trading recommendations.
 
-This template ships with [xAI](https://x.ai) `grok-2-1212` as the default chat model. However, with the [AI SDK](https://sdk.vercel.ai/docs), you can switch LLM providers to [OpenAI](https://openai.com), [Anthropic](https://anthropic.com), [Cohere](https://cohere.com/), and [many more](https://sdk.vercel.ai/providers/ai-sdk-providers) with just a few lines of code.
+## Key Features
 
-## Deploy Your Own
+### Token Information Query
 
-You can deploy your own version of the Next.js AI Chatbot to Vercel with one click:
+- **Basic Token Information** - Quickly retrieve token fundamentals through pool addresses
+- **Real-time Price Data** - Get the latest token price, trading volume, and market cap information
+- **Liquidity Pool Analysis** - Analyze liquidity pool status and trading activity
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fai-chatbot&env=AUTH_SECRET&envDescription=Generate%20a%20random%20secret%20to%20use%20for%20authentication&envLink=https%3A%2F%2Fgenerate-secret.vercel.app%2F32&project-name=my-awesome-chatbot&repository-name=my-awesome-chatbot&demo-title=AI%20Chatbot&demo-description=An%20Open-Source%20AI%20Chatbot%20Template%20Built%20With%20Next.js%20and%20the%20AI%20SDK%20by%20Vercel&demo-url=https%3A%2F%2Fchat.vercel.ai&products=%5B%7B%22type%22%3A%22integration%22%2C%22protocol%22%3A%22ai%22%2C%22productSlug%22%3A%22grok%22%2C%22integrationSlug%22%3A%22xai%22%7D%2C%7B%22type%22%3A%22integration%22%2C%22protocol%22%3A%22ai%22%2C%22productSlug%22%3A%22api-key%22%2C%22integrationSlug%22%3A%22groq%22%7D%2C%7B%22type%22%3A%22integration%22%2C%22protocol%22%3A%22storage%22%2C%22productSlug%22%3A%22neon%22%2C%22integrationSlug%22%3A%22neon%22%7D%2C%7B%22type%22%3A%22blob%22%7D%5D)
+### K-line Technical Analysis
 
-## Running locally
+- **Multi-period K-line Data** - Support for various time periods including 15 seconds, 1 minute, 5 minutes, 15 minutes, 1 hour, etc.
+- **Technical Indicator Calculation** - Automatically calculate key technical indicators such as RSI, MACD, Bollinger Bands
+- **Trend Analysis** - Intelligently identify market trends with confidence assessments
+- **Visualization Charts** - Intuitively display price trends and technical indicators
 
-You will need to use the environment variables [defined in `.env.example`](.env.example) to run Next.js AI Chatbot. It's recommended you use [Vercel Environment Variables](https://vercel.com/docs/projects/environment-variables) for this, but a `.env` file is all that is necessary.
+### Strategy Backtesting
 
-> Note: You should not commit your `.env` file or it will expose secrets that will allow others to control access to your various AI and authentication provider accounts.
+- **RSI Strategy Backtesting** - Backtest trading strategies based on RSI indicators
+- **Performance Evaluation** - Calculate key metrics such as strategy returns, maximum drawdown, win rate
+- **Transaction Records** - Detailed recording of entry and exit points for each trade
+- **Strategy Optimization Suggestions** - Provide strategy improvement recommendations based on backtesting results
 
-1. Install Vercel CLI: `npm i -g vercel`
-2. Link local instance with Vercel and GitHub accounts (creates `.vercel` directory): `vercel link`
-3. Download your environment variables: `vercel env pull`
+### AI-Assisted Analysis
+
+- **Intelligent Conversation** - Communicate with the AI assistant using natural language to obtain market analysis and recommendations
+- **Code Generation** - Assist in generating trading strategy code and analysis scripts
+- **Document Generation** - Automatically generate analysis reports and trading plans
+
+## Installation
+
+### Requirements
+
+- Node.js 18.0.0 or higher
+- pnpm package manager
+
+### Local Setup
+
+1. Clone the repository
+
+```bash
+git clone https://github.com/yourusername/quant72ai.git
+cd quant72ai
+```
+
+2. Install dependencies
 
 ```bash
 pnpm install
+```
+
+3. Configure environment variables
+
+Copy the `.env.example` file and rename it to `.env`, then fill in the necessary environment variables:
+
+```
+AUTH_SECRET=your_auth_secret
+# Other necessary API keys and configurations
+```
+
+4. Start the development server
+
+```bash
 pnpm dev
 ```
 
-Your app template should now be running on [localhost:3000](http://localhost:3000/).
+The application will run at [http://localhost:3000](http://localhost:3000).
+
+## Usage Guide
+
+### Token Analysis
+
+1. Enter the token pool address in the chat interface
+2. The AI assistant will automatically retrieve and analyze token information
+3. View technical indicators and trend analysis results
+
+### Strategy Backtesting
+
+1. Enter the backtesting command in the chat interface, for example: "Backtest RSI strategy using token address 0x..."
+2. Specify backtesting parameters such as time period, RSI period, overbought/oversold thresholds
+3. View backtesting results, including return rate, win rate, and transaction records
+
+### Custom Analysis
+
+1. Describe your analysis needs using natural language
+2. The AI assistant will provide relevant analysis and recommendations based on your requirements
+3. You can request generation of analysis reports or trading plans
+
+## Contribution Guidelines
+
+We welcome issue reports and feature requests. If you want to contribute code, please follow these steps:
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
