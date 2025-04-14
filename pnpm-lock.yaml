@@ -143,6 +143,9 @@ importers:
       jose:
         specifier: ^6.0.10
         version: 6.0.10
+      lightweight-charts:
+        specifier: ^5.0.5
+        version: 5.0.5
       lucide-react:
         specifier: ^0.446.0
         version: 0.446.0(react@19.0.0-rc-45804af1-20241021)
@@ -2841,6 +2844,9 @@ packages:
     resolution: {integrity: sha512-GipyPsXO1anza0AOZdy69Im7hGFCNB7Y/NGjDlZGJ3GJJLtwNSb2vrzYrTYJRrRloVx7pl+bhUaTB8yiccPvFQ==}
     engines: {node: '> 0.1.90'}
 
+  fancy-canvas@2.1.0:
+    resolution: {integrity: sha512-nifxXJ95JNLFR2NgRV4/MxVP45G9909wJTEKz5fg/TZS20JJZA6hfgRVh/bC9bwl2zBtBNcYPjiBE4njQHVBwQ==}
+
   fast-deep-equal@3.1.3:
     resolution: {integrity: sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==}
 
@@ -3373,6 +3379,9 @@ packages:
 
   libphonenumber-js@1.12.6:
     resolution: {integrity: sha512-PJiS4ETaUfCOFLpmtKzAbqZQjCCKVu2OhTV4SVNNE7c2nu/dACvtCqj4L0i/KWNnIgRv7yrILvBj5Lonv5Ncxw==}
+
+  lightweight-charts@5.0.5:
+    resolution: {integrity: sha512-o6/EDBLgvijwPatPosGmeS6JPsqBN3JJ8Wi6j+Zo5E1rmMOsiv3jG8/wBHFN/aqqE6eFMeKWFtGfVjB2HJtvtQ==}
 
   lilconfig@3.1.3:
     resolution: {integrity: sha512-/vlFKAoH5Cgt3Ie+JLhRbwOsCQePABiU3tJ1egGvyQ+33R/vcwM2Zl2QR/LzjsBeItPt3oSVXapn+m4nQDvpzw==}
@@ -7368,6 +7377,8 @@ snapshots:
 
   eyes@0.1.8: {}
 
+  fancy-canvas@2.1.0: {}
+
   fast-deep-equal@3.1.3: {}
 
   fast-equals@5.2.2: {}
@@ -7930,6 +7941,10 @@ snapshots:
       type-check: 0.4.0
 
   libphonenumber-js@1.12.6: {}
+
+  lightweight-charts@5.0.5:
+    dependencies:
+      fancy-canvas: 2.1.0
 
   lilconfig@3.1.3: {}
 
