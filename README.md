@@ -1,5 +1,5 @@
 <p align="center">
-  <img alt="Quant72 AI" src="public/quant72_logo.jpg" width="200">
+  <img alt="Quant72 AI" src="public/images/quant72_logo.jpg" width="200">
   <h1 align="center">Quant72 AI</h1>
 </p>
 
