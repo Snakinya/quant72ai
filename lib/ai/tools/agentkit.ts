@@ -39,7 +39,7 @@ export async function initializeAgentKit() {
     console.log("🚀 正在初始化 AgentKit...");
     const networkId = process.env.NETWORK_ID || "base-mainnet";
     currentNetworkId = networkId;
-    const walletDataFile = `wallet_data_${networkId.replace(/-/g, "_")}.txt`;
+    const walletDataFile = `/tmp/wallet_data_${networkId.replace(/-/g, "_")}.txt`;
 
     let walletData: WalletData | null = null;
     let privateKey: Hex | null = null;
