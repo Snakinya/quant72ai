@@ -1,22 +1,80 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 
+// 缓存系统，减少重复API调用
+const cache = {
+  tokenInfo: new Map<string, { data: any, timestamp: number }>(),
+  klineData: new Map<string, { data: any, timestamp: number }>(),
+  // 缓存有效期 (ms)
+  TTL: {
+    tokenInfo: 5 * 60 * 1000, // 5分钟
+    klineData: 30 * 1000      // 30秒
+  }
+};
+
+// 通用API请求函数，支持缓存
+async function fetchWithCache(
+  url: string, 
+  cacheKey: string, 
+  cacheType: 'tokenInfo' | 'klineData'
+): Promise<any> {
+  // 检查缓存
+  const cachedItem = cache[cacheType].get(cacheKey);
+  const now = Date.now();
+  
+  if (cachedItem && (now - cachedItem.timestamp < cache.TTL[cacheType])) {
+    return cachedItem.data;
+  }
+  
+  // 无缓存或缓存过期，发起请求
+  const response = await fetch(url);
+  
+  if (!response.ok) {
+    throw new Error(`API请求失败: ${response.statusText}`);
+  }
+  
+  const data = await response.json();
+  
+  // 更新缓存
+  cache[cacheType].set(cacheKey, { data, timestamp: now });
+  
+  return data;
+}
+
+// 辅助函数：提取池地址
+function extractPoolAddress(poolData: any): string | null {
+  if (poolData?.pools?.length > 0) {
+    return poolData.pools[0].poolAddress;
+  }
+  return null;
+}
+
+// 辅助函数：提取代币符号
+function extractTokenSymbol(poolData: any): string {
+  if (poolData?.pools?.length > 0 && poolData.pools[0].baseTokenInfo) {
+    return poolData.pools[0].baseTokenInfo.symbol;
+  }
+  return 'Unknown';
+}
+
 export const getTokenInfo = tool({
   description: 'Get basic information and trading data for a token',
   parameters: z.object({
     poolAddress: z.string().describe('Pool address of the token'),
   }),
   execute: async ({ poolAddress }) => {
-    const response = await fetch(
-      `https://api.mevx.io/api/v1/pools/search?q=${poolAddress}`,
-    );
-
-    if (!response.ok) {
-      throw new Error(`Failed to get token info: ${response.statusText}`);
+    try {
+      const cacheKey = `info_${poolAddress}`;
+      const tokenData = await fetchWithCache(
+        `https://api.mevx.io/api/v1/pools/search?q=${poolAddress}`,
+        cacheKey,
+        'tokenInfo'
+      );
+      return tokenData;
+    } catch (error) {
+      console.error('获取代币信息失败:', error);
+      throw new Error(`获取代币信息失败: ${error.message}`);
     }
-
-    const tokenData = await response.json();
-    return tokenData;
   },
 });
 
@@ -25,121 +83,101 @@ export const analyzeKline = tool({
   parameters: z.object({
     poolAddress: z.string().describe('Pool address of the token'),
     timeBucket: z.string().default('15s').describe('K-line time period, such as 15s, 1m, 5m, 15m, 1h'),
-    limit: z.number().default(300).describe('Number of K-line candles to fetch'),
+    limit: z.number().default(150).describe('Number of K-line candles to fetch'),
   }),
   execute: async ({ poolAddress, timeBucket, limit }) => {
     console.log(`analyzeKline called with: poolAddress=${poolAddress}, timeBucket=${timeBucket}, limit=${limit}`);
     
-    // Get current timestamp (seconds)
-    const endTime = Math.floor(Date.now() / 1000);
-    
-    // 先搜索获取真正的池地址
-    let actualPoolAddress = poolAddress;
     try {
-      const searchResponse = await fetch(
+      // 获取当前时间戳 (秒)
+      const endTime = Math.floor(Date.now() / 1000);
+      
+      // 一次性获取代币信息
+      const tokenInfoCacheKey = `info_${poolAddress}`;
+      const tokenData = await fetchWithCache(
         `https://api.mevx.io/api/v1/pools/search?q=${poolAddress}`,
+        tokenInfoCacheKey,
+        'tokenInfo'
       );
       
-      if (searchResponse.ok) {
-        const searchData = await searchResponse.json();
-        if (searchData.pools && searchData.pools.length > 0) {
-          actualPoolAddress = searchData.pools[0].poolAddress;
-          console.log(`Found pool address: ${actualPoolAddress} for query: ${poolAddress}`);
-        }
-      }
-    } catch (error) {
-      console.error('Error searching for pool address:', error);
-      // 继续使用原始输入的地址
-    }
-
-
-    const response = await fetch(
-      `https://api.mevx.io/api/v1/candlesticks?chain=base&poolAddress=${actualPoolAddress}&timeBucket=${timeBucket}&endTime=${endTime}&outlier=true&limit=${limit}`,
-    );
-
-    if (!response.ok) {
-      console.error(`Failed to get K-line data: ${response.statusText}`);
-      throw new Error(`Failed to get K-line data: ${response.statusText}`);
-    }
-
-    const klineData = await response.json();
-    console.log(`K-line data fetched from API: ${klineData.candlesticks?.length || 0} candles`);
-    
-    // Calculate technical indicators
-    const candles = klineData.candlesticks;
-    const analysisResult = calculateIndicators(candles);
-    
-    console.log('Analysis result:', {
-      trend: analysisResult.trend,
-      confidence: analysisResult.confidence,
-      indicatorsCount: Object.keys(analysisResult.indicators || {}).length
-    });
-    
-    // Get token symbol from original data
-    let tokenSymbol = 'Unknown';
-    try {
-      // Try to get token info
-      const tokenInfoResponse = await fetch(
-        `https://api.mevx.io/api/v1/pools/search?q=${poolAddress}`,
+      // 提取实际池地址和代币符号
+      const actualPoolAddress = extractPoolAddress(tokenData) || poolAddress;
+      const tokenSymbol = extractTokenSymbol(tokenData);
+      
+      console.log(`Using pool address: ${actualPoolAddress} for token: ${tokenSymbol}`);
+      
+      // 获取K线数据
+      const klineCacheKey = `kline_${actualPoolAddress}_${timeBucket}_${limit}_${endTime}`;
+      const klineData = await fetchWithCache(
+        `https://api.mevx.io/api/v1/candlesticks?chain=base&poolAddress=${actualPoolAddress}&timeBucket=${timeBucket}&endTime=${endTime}&outlier=true&limit=${limit}`,
+        klineCacheKey,
+        'klineData'
       );
       
-      if (tokenInfoResponse.ok) {
-        const tokenData = await tokenInfoResponse.json();
-        if (tokenData.pools && tokenData.pools.length > 0 && tokenData.pools[0].baseTokenInfo) {
-          tokenSymbol = tokenData.pools[0].baseTokenInfo.symbol;
-          console.log(`Token symbol found: ${tokenSymbol}`);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to get token symbol:', error);
-    }
-    
-    // Only return essential analysis data, exclude full candle data
-    const result = {
-      tokenSymbol,
-      timeBucket,
-      poolAddress, // Add poolAddress to the response
-      analysis: {
-        trend: analysisResult.trend,
-        confidence: analysisResult.confidence,
-        reason: analysisResult.reason,
-        indicators: {
-          price: analysisResult.indicators?.price || 0,
-          priceChange1h: analysisResult.indicators?.priceChange1h || 0,
-          priceChange24h: analysisResult.indicators?.priceChange24h || 0,
-          rsi: analysisResult.indicators?.rsi || 50,
-          macd: {
-            macd: analysisResult.indicators?.macd?.macd || 0,
-            signal: analysisResult.indicators?.macd?.signal || 0,
-            histogram: analysisResult.indicators?.macd?.histogram || 0
-          },
-          bollinger: {
-            middle: analysisResult.indicators?.bollinger?.middle || 0
-          },
-          ma: {
-            ma5: analysisResult.indicators?.ma?.ma5 || 0
-          },
-          conditions: {
-            bollPosition: analysisResult.indicators?.conditions?.bollPosition || "No data",
-            rsiCondition: analysisResult.indicators?.conditions?.rsiCondition || "No data",
-            maCondition: analysisResult.indicators?.conditions?.maCondition || "No data",
-            macdCondition: analysisResult.indicators?.conditions?.macdCondition || "No data"
+      console.log(`K-line data fetched: ${klineData.candlesticks?.length || 0} candles`);
+      
+      // 计算技术指标
+      const candles = klineData.candlesticks || [];
+      const analysisResult = calculateIndicators(candles);
+      
+      // 只返回必要的分析数据
+      const result = {
+        tokenSymbol,
+        timeBucket,
+        poolAddress: actualPoolAddress,
+        analysis: {
+          trend: analysisResult.trend,
+          confidence: analysisResult.confidence,
+          reason: analysisResult.reason,
+          indicators: {
+            price: analysisResult.indicators?.price || 0,
+            priceChange1h: analysisResult.indicators?.priceChange1h || 0,
+            priceChange24h: analysisResult.indicators?.priceChange24h || 0,
+            rsi: analysisResult.indicators?.rsi || 50,
+            macd: {
+              macd: analysisResult.indicators?.macd?.macd || 0,
+              signal: analysisResult.indicators?.macd?.signal || 0,
+              histogram: analysisResult.indicators?.macd?.histogram || 0
+            },
+            bollinger: {
+              middle: analysisResult.indicators?.bollinger?.middle || 0
+            },
+            ma: {
+              ma5: analysisResult.indicators?.ma?.ma5 || 0
+            },
+            conditions: {
+              bollPosition: analysisResult.indicators?.conditions?.bollPosition || "No data",
+              rsiCondition: analysisResult.indicators?.conditions?.rsiCondition || "No data",
+              maCondition: analysisResult.indicators?.conditions?.maCondition || "No data",
+              macdCondition: analysisResult.indicators?.conditions?.macdCondition || "No data"
+            }
           }
         }
-      }
-    };
-    
-    console.log('Returning analysis result to AI');
-    return result;
+      };
+      
+      return result;
+    } catch (error) {
+      console.error('K线分析失败:', error);
+      return {
+        tokenSymbol: 'Unknown',
+        timeBucket,
+        poolAddress,
+        analysis: {
+          trend: 'Neutral',
+          confidence: 50,
+          reason: `分析失败: ${error.message}`,
+          indicators: {}
+        }
+      };
+    }
   },
 });
 
-// Calculate technical indicators function
+// Calculate technical indicators function - 优化计算效率
 function calculateIndicators(candles: any[]) {
   console.log(`Starting technical analysis with ${candles.length} candles`);
   
   if (!candles || candles.length === 0) {
-    console.error('No candle data available for analysis');
     return {
       trend: 'Neutral',
       confidence: 50,
@@ -149,95 +187,43 @@ function calculateIndicators(candles: any[]) {
   }
 
   try {
-    // Extract close prices and volumes
+    // 提取价格数据 - 一次性提取所有需要的数据
     const closes = candles.map(c => parseFloat(c.close));
     const highs = candles.map(c => parseFloat(c.high));
     const lows = candles.map(c => parseFloat(c.low));
     const volumes = candles.map(c => parseFloat(c.volume));
     const timestamps = candles.map(c => c.timestamp);
     
-    console.log('Data extraction complete:', {
-      dataPoints: closes.length,
-      currentPrice: closes[closes.length - 1],
-      timeRange: `${new Date(timestamps[0] * 1000).toISOString()} to ${new Date(timestamps[timestamps.length - 1] * 1000).toISOString()}`
-    });
-
-    // Calculate technical indicators
+    const currentPrice = closes[closes.length - 1];
+    
+    // 计算技术指标 - 使用优化的计算方法
     const rsi = calculateRSI(closes);
     const macd = calculateMACD(closes);
     const bollinger = calculateBollingerBands(closes);
     const ma = calculateMovingAverages(closes);
     const volumeIndicators = calculateVolumeIndicators(volumes);
     
-    console.log('Technical indicators calculated:', {
-      rsi: rsi[rsi.length - 1],
-      macdHistogram: macd.histogram[macd.histogram.length - 1],
-      bollingerWidth: bollinger.upper[bollinger.upper.length - 1] - bollinger.lower[bollinger.lower.length - 1],
-      ma5: ma.ma5[ma.ma5.length - 1]
-    });
-
-    // Get current price and calculate changes
-    const currentPrice = closes[closes.length - 1];
+    // 计算价格变化
+    const priceChanges = calculatePriceChanges(closes, timeBucketToSeconds(candles[0]?.timeBucket || '15s'));
     
-    // Calculate price changes
-    let priceChange1h = 0;
-    let priceChange24h = 0;
+    // 分析指标条件
+    const currentRSI = rsi[rsi.length - 1];
+    const currentMACD = {
+      macd: macd.macd[macd.macd.length - 1],
+      signal: macd.signal[macd.signal.length - 1],
+      histogram: macd.histogram[macd.histogram.length - 1]
+    };
     
-    const candlesPerHour = 3600 / 15; // Assuming 15s candles
-    const candlesPer24h = 24 * candlesPerHour;
-    
-    if (closes.length > candlesPerHour) {
-      const price1hAgo = closes[closes.length - 1 - candlesPerHour];
-      priceChange1h = ((currentPrice - price1hAgo) / price1hAgo) * 100;
-    }
-    
-    if (closes.length > candlesPer24h) {
-      const price24hAgo = closes[closes.length - 1 - candlesPer24h];
-      priceChange24h = ((currentPrice - price24hAgo) / price24hAgo) * 100;
-    } else if (closes.length > 1) {
-      // If we don't have 24h of data, use the oldest available
-      const oldestPrice = closes[0];
-      priceChange24h = ((currentPrice - oldestPrice) / oldestPrice) * 100;
-    }
-    
-    console.log('Price changes calculated:', {
-      priceChange1h,
-      priceChange24h
-    });
-
-    // Analyze price position in Bollinger Bands
     const bollPosition = getPricePositionInBollinger(currentPrice, bollinger);
-    
-    // Analyze RSI condition
-    const rsiCondition = getRSICondition(rsi[rsi.length - 1]);
-    
-    // Analyze Moving Average system
+    const rsiCondition = getRSICondition(currentRSI);
     const maCondition = getMACondition(ma);
-    
-    // Analyze MACD
-    const macdCondition = getMACDCondition(macd.macd[macd.macd.length - 1], macd.signal[macd.signal.length - 1], macd.histogram[macd.histogram.length - 1]);
-    
-    // Analyze Volume
+    const macdCondition = getMACDCondition(currentMACD.macd, currentMACD.signal, currentMACD.histogram);
     const volumeCondition = getVolumeCondition(volumeIndicators.volumeRatio);
     
-    console.log('Condition analysis complete:', {
-      bollPosition,
-      rsiCondition,
-      maCondition,
-      macdCondition,
-      volumeCondition
-    });
-    
-    // Generate comprehensive analysis
+    // 生成综合分析
     const { trend, confidence, reason } = generateTrendAnalysis(
       bollPosition, rsiCondition, maCondition, macdCondition, volumeCondition, currentPrice
     );
-    
-    console.log('Final trend analysis:', {
-      trend,
-      confidence,
-      reason
-    });
     
     return {
       trend,
@@ -245,14 +231,10 @@ function calculateIndicators(candles: any[]) {
       reason,
       indicators: {
         price: currentPrice,
-        priceChange1h,
-        priceChange24h,
-        rsi: rsi[rsi.length - 1],
-        macd: {
-          macd: macd.macd[macd.macd.length - 1],
-          signal: macd.signal[macd.signal.length - 1],
-          histogram: macd.histogram[macd.histogram.length - 1]
-        },
+        priceChange1h: priceChanges.priceChange1h,
+        priceChange24h: priceChanges.priceChange24h,
+        rsi: currentRSI,
+        macd: currentMACD,
         bollinger: {
           middle: bollinger.middle[bollinger.middle.length - 1],
           upper: bollinger.upper[bollinger.upper.length - 1],
@@ -282,6 +264,48 @@ function calculateIndicators(candles: any[]) {
       indicators: {}
     };
   }
+}
+
+// 辅助函数：将时间周期转换为秒
+function timeBucketToSeconds(timeBucket: string): number {
+  const unit = timeBucket.slice(-1);
+  const value = parseInt(timeBucket.slice(0, -1));
+  
+  switch (unit) {
+    case 's': return value;
+    case 'm': return value * 60;
+    case 'h': return value * 3600;
+    case 'd': return value * 86400;
+    default: return 15; // 默认为15秒
+  }
+}
+
+// 计算价格变化 - 优化版本
+function calculatePriceChanges(closes: number[], timeIntervalSeconds: number) {
+  const currentPrice = closes[closes.length - 1];
+  let priceChange1h = 0;
+  let priceChange24h = 0;
+  
+  const candlesPerHour = Math.floor(3600 / timeIntervalSeconds);
+  const candlesPer24h = Math.floor(24 * candlesPerHour);
+  
+  // 计算1小时价格变化
+  if (closes.length > candlesPerHour) {
+    const price1hAgo = closes[closes.length - 1 - candlesPerHour];
+    priceChange1h = ((currentPrice - price1hAgo) / price1hAgo) * 100;
+  }
+  
+  // 计算24小时价格变化
+  if (closes.length > candlesPer24h) {
+    const price24hAgo = closes[closes.length - 1 - candlesPer24h];
+    priceChange24h = ((currentPrice - price24hAgo) / price24hAgo) * 100;
+  } else if (closes.length > 1) {
+    // 如果没有24小时的数据，使用最早可用的
+    const oldestPrice = closes[0];
+    priceChange24h = ((currentPrice - oldestPrice) / oldestPrice) * 100;
+  }
+  
+  return { priceChange1h, priceChange24h };
 }
 
 // Calculate RSI
@@ -702,4 +726,4 @@ function generateTrendAnalysis(bollPosition: any, rsiCondition: any, maCondition
   }
   
   return { trend, confidence, reason };
-} 
+}

@@ -177,8 +177,10 @@ export function KlineChart({ data, tokenSymbol = 'Unknown', timeBucket = '15s' }
     const fetchKlineData = async () => {
       setIsLoadingCandles(true);
       try {
-        // 修改limit为10000，以获取更多K线数据
-        const url = `/api/kline?poolAddress=${poolAddress}&timeBucket=${displayTimeBucket}&limit=10000&debug=true`;
+        // 限制K线数据量为合理的数值，避免过多数据传输和处理
+        // 大多数图表分析只需要200-500条数据就足够了
+        const dataLimit = 500;
+        const url = `/api/kline?poolAddress=${poolAddress}&timeBucket=${displayTimeBucket}&limit=${dataLimit}&debug=true`;
         console.log('Fetching K-line data from:', url);
         
         const response = await fetch(url);
@@ -739,4 +741,4 @@ export function KlineChart({ data, tokenSymbol = 'Unknown', timeBucket = '15s' }
       </CardContent>
     </Card>
   );
-} 
+}
