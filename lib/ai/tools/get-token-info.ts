@@ -33,8 +33,28 @@ export const analyzeKline = tool({
     // Get current timestamp (seconds)
     const endTime = Math.floor(Date.now() / 1000);
     
+    // 先搜索获取真正的池地址
+    let actualPoolAddress = poolAddress;
+    try {
+      const searchResponse = await fetch(
+        `https://api.mevx.io/api/v1/pools/search?q=${poolAddress}`,
+      );
+      
+      if (searchResponse.ok) {
+        const searchData = await searchResponse.json();
+        if (searchData.pools && searchData.pools.length > 0) {
+          actualPoolAddress = searchData.pools[0].poolAddress;
+          console.log(`Found pool address: ${actualPoolAddress} for query: ${poolAddress}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error searching for pool address:', error);
+      // 继续使用原始输入的地址
+    }
+
+
     const response = await fetch(
-      `https://api.mevx.io/api/v1/candlesticks?chain=base&poolAddress=${poolAddress}&timeBucket=${timeBucket}&endTime=${endTime}&outlier=true&limit=${limit}`,
+      `https://api.mevx.io/api/v1/candlesticks?chain=base&poolAddress=${actualPoolAddress}&timeBucket=${timeBucket}&endTime=${endTime}&outlier=true&limit=${limit}`,
     );
 
     if (!response.ok) {
