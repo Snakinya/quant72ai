@@ -163,6 +163,14 @@ export const analyzeKline = tool({
       return result;
     } catch (error) {
       console.error('K线分析失败:', error);
+      // 修复类型错误：处理 unknown 类型的 error
+      let errorMessage = '未知错误';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else {
+        errorMessage = String(error);
+      }
+      
       return {
         tokenSymbol: 'Unknown',
         timeBucket,
@@ -170,7 +178,7 @@ export const analyzeKline = tool({
         analysis: {
           trend: 'Neutral',
           confidence: 50,
-          reason: `分析失败: ${error.message}`,
+          reason: `分析失败: ${errorMessage}`,
           indicators: {}
         }
       };
