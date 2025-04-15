@@ -34,10 +34,27 @@ export async function GET(request: NextRequest) {
   if (!poolAddress) {
     return NextResponse.json({ error: 'Pool address is required' }, { status: 400 });
   }
-
+      // 先搜索获取真正的池地址
+  let actualPoolAddress = poolAddress;
+  try {
+    const searchResponse = await fetch(
+      `https://api.mevx.io/api/v1/pools/search?q=${poolAddress}`,
+    );
+    
+    if (searchResponse.ok) {
+      const searchData = await searchResponse.json();
+      if (searchData.pools && searchData.pools.length > 0) {
+        actualPoolAddress = searchData.pools[0].poolAddress;
+        console.log(`Found pool address: ${actualPoolAddress} for query: ${poolAddress}`);
+      }
+    }
+  } catch (error) {
+    console.error('Error searching for pool address:', error);
+    // 继续使用原始输入的地址
+  }
   try {
     const endTime = Math.floor(Date.now() / 1000);
-    const apiUrl = `https://api.mevx.io/api/v1/candlesticks?chain=base&poolAddress=${poolAddress}&timeBucket=${timeBucket}&endTime=${endTime}&outlier=true&limit=${limit}`;
+    const apiUrl = `https://api.mevx.io/api/v1/candlesticks?chain=base&poolAddress=${actualPoolAddress}&timeBucket=${timeBucket}&endTime=${endTime}&outlier=true&limit=${limit}`;
 
     console.log(`Fetching K-line data from: ${apiUrl}`);
 
