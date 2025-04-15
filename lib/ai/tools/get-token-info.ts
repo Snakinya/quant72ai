@@ -73,7 +73,12 @@ export const getTokenInfo = tool({
       return tokenData;
     } catch (error) {
       console.error('获取代币信息失败:', error);
-      throw new Error(`获取代币信息失败: ${error.message}`);
+      // 修复类型错误：处理unknown类型的error
+      if (error instanceof Error) {
+        throw new Error(`获取代币信息失败: ${error.message}`);
+      } else {
+        throw new Error(`获取代币信息失败: ${String(error)}`);
+      }
     }
   },
 });
