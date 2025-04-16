@@ -17,5 +17,9 @@ export const chatModels: Array<ChatModel> = [
     name: 'GPT-4o-mini',
     description: 'OpenAI GPT-4o-mini model',
   },
-
+  {
+    id: 'deepseek-chat',
+    name: 'DeepSeek Chat',
+    description: 'DeepSeek Chat model',
+  },
 ];
