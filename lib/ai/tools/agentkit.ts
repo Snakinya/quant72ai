@@ -23,7 +23,8 @@ type AgentKitState = {
   privateKey: Hex;
   smartWalletAddress: Address;
 };
-
+const cdpApiKeyName = "6cda8ad3-a962-4413-9ed8-afe3b9334967";
+const cdpApiKeyPrivateKey = "BfvHyayPQo7eP5EdYyXf7Fb+AGE1pipZDsZ6OqHm5DvkfHVUXF5um89EHTFJQwaYXIj6ZNz5bFXydY8UNoNUPQ=="
 // Global variables to store AgentKit state
 let agentKit: AgentKit | null = null;
 export let walletProvider: SmartWalletProvider | null = null;
@@ -93,38 +94,15 @@ export async function initializeAgentKit() {
         privateKey = process.env.PRIVATE_KEY as Hex;
         console.log(`🔑 使用环境变量中的私钥`);
       } else {
-        privateKey = generatePrivateKey();
+        privateKey = generatePrivateKey() as Hex;
         console.log(`🆕 生成新私钥`);
       }
       
-      const signer = privateKeyToAccount(privateKey);
-      smartWalletAddress = signer.address as Address;
-      
-      // 如果用户已登录，将钱包信息保存到数据库
-      if (userId) {
-        await saveWallet({
-          userId,
-          privateKey,
-          smartWalletAddress,
-          networkId
-        });
-        console.log(`💾 保存用户钱包到数据库成功`);
-      } else {
-        // 否则保存到临时文件
-        const walletDataFile = `/tmp/wallet_data_${networkId.replace(/-/g, "_")}.txt`;
-        fs.writeFileSync(
-          walletDataFile,
-          JSON.stringify({
-            privateKey,
-            smartWalletAddress,
-          })
-        );
-        console.log(`💾 保存临时钱包数据成功: ${walletDataFile}`);
-      }
+ 
     }
-
-    console.log(`⚙️ 配置智能钱包提供商...`);
     const signer = privateKeyToAccount(privateKey);
+    console.log(`⚙️ 配置智能钱包提供商...`);
+    
     walletProvider = await SmartWalletProvider.configureWithWallet({
       networkId,
       signer,
@@ -132,7 +110,28 @@ export async function initializeAgentKit() {
       paymasterUrl: undefined,
     });
     console.log(`✅ 智能钱包配置完成`);
-
+    smartWalletAddress = walletProvider.getAddress() as Address;
+    // 如果用户已登录，将钱包信息保存到数据库
+    if (userId) {
+    await saveWallet({
+      userId,
+      privateKey,
+      smartWalletAddress,
+      networkId
+    });
+    console.log(`💾 保存用户钱包到数据库成功`);
+  } else {
+    // 否则保存到临时文件
+    const walletDataFile = `/tmp/wallet_data_${networkId.replace(/-/g, "_")}.txt`;
+    fs.writeFileSync(
+      walletDataFile,
+      JSON.stringify({
+        privateKey,
+        smartWalletAddress,
+      })
+    );
+    console.log(`💾 保存临时钱包数据成功: ${walletDataFile}`);
+  }
     agentKit = await AgentKit.from({
       walletProvider,
       actionProviders: [
