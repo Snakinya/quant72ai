@@ -14,6 +14,7 @@ import { Weather } from './weather';
 import { TokenInfo } from './token-info';
 import equal from 'fast-deep-equal';
 import { cn } from '@/lib/utils';
+import { parseTransactionMessage } from '@/lib/utils';
 import { Button } from './ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { MessageEditor } from './message-editor';
@@ -21,6 +22,7 @@ import { DocumentPreview } from './document-preview';
 import { MessageReasoning } from './message-reasoning';
 import { UseChatHelpers } from '@ai-sdk/react';
 import { KlineChart } from './kline-chart';
+import { TransactionCard } from './transaction-card';
 import Image from 'next/image';
 import { RiskProfileCard } from './risk-profile-card';
 import { AllocationSuggestion } from './allocation-suggestion';
@@ -201,6 +203,9 @@ const PurePreviewMessage = ({
               }
 
               if (type === 'text') {
+                // 检查文本是否包含转账信息
+                const transactionInfo = parseTransactionMessage(part.text);
+                
                 if (mode === 'view') {
                   return (
                     <div key={key} className="flex flex-row gap-2 items-start">
@@ -229,7 +234,16 @@ const PurePreviewMessage = ({
                             message.role === 'user',
                         })}
                       >
-                        <Markdown>{part.text}</Markdown>
+                        {/* 如果是转账信息，显示交易卡片 */}
+                        {transactionInfo ? (
+                          <>
+                            <TransactionCard transaction={transactionInfo.data} />
+                            {/* 显示原始文本（可选，您可以注释掉这部分来只显示卡片） */}
+                            <Markdown>{part.text}</Markdown>
+                          </>
+                        ) : (
+                          <Markdown>{part.text}</Markdown>
+                        )}
                       </div>
                     </div>
                   );

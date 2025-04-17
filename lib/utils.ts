@@ -163,3 +163,27 @@ export function getTrailingMessageId({
 
   return trailingMessage.id;
 }
+
+// 解析转账交易消息
+export function parseTransactionMessage(text: string) {
+  // 匹配格式: "Transferred {amount} ETH to {address}\nTransaction hash: {hash}"
+  const transferRegex = /Transferred\s+(\d+)\s+ETH\s+to\s+(0x[a-fA-F0-9]{40})(?:.*?)Transaction\s+hash:\s+(0x[a-fA-F0-9]{64})/s;
+  
+  const match = text.match(transferRegex);
+  
+  if (match) {
+    return {
+      type: 'transaction',
+      data: {
+        amount: match[1],
+        recipient: match[2],
+        hash: match[3],
+        unit: 'WEI',
+        // 如果金额特别大，可能是 WEI 单位，转换为 ETH 显示
+        amountInEth: match[1].length > 10 ? `(${parseFloat(match[1]) / 1e18} ETH)` : undefined
+      }
+    };
+  }
+  
+  return null;
+}
