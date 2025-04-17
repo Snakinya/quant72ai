@@ -28,7 +28,7 @@ import { getTokenInfo, analyzeKline } from '@/lib/ai/tools/get-token-info';
 import { backtestRSIStrategy } from '@/lib/ai/tools/backtest-strategy';
 import { isProductionEnvironment } from '@/lib/constants';
 import { myProvider } from '@/lib/ai/providers';
-import { getAgentKitTools, getMyWalletAddress } from '@/lib/ai/tools/agentkit';
+import { getAgentKitTools, getMyWalletAddress, transferTokens } from '@/lib/ai/tools/agentkit';
 import { getMorphoVaults } from '@/lib/ai/tools/morpho';
 import { z } from 'zod';
 
@@ -125,7 +125,7 @@ export async function POST(request: Request) {
         }
         
         // 构建激活工具列表
-        const baseTools = ['getWeather', 'createDocument', 'updateDocument', 'requestSuggestions', 'getMyWalletAddress', 'getMorphoVaults', 'getTokenInfo', 'analyzeKline', 'backtestRSIStrategy'];
+        const baseTools = ['getWeather', 'createDocument', 'updateDocument', 'requestSuggestions', 'getMyWalletAddress', 'getMorphoVaults', 'getTokenInfo', 'analyzeKline', 'backtestRSIStrategy', 'transferTokens'];
         const agentKitToolNames = Object.keys(agentKitTools).filter(key => !baseTools.includes(key));
         const activeTools = [...baseTools, ...agentKitToolNames];
         

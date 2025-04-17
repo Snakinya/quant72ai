@@ -14,7 +14,6 @@ import { Weather } from './weather';
 import { TokenInfo } from './token-info';
 import equal from 'fast-deep-equal';
 import { cn } from '@/lib/utils';
-import { parseTransactionMessage } from '@/lib/utils';
 import { Button } from './ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { MessageEditor } from './message-editor';
@@ -22,7 +21,6 @@ import { DocumentPreview } from './document-preview';
 import { MessageReasoning } from './message-reasoning';
 import { UseChatHelpers } from '@ai-sdk/react';
 import { KlineChart } from './kline-chart';
-import { TransactionCard } from './transaction-card';
 import Image from 'next/image';
 import { RiskProfileCard } from './risk-profile-card';
 import { AllocationSuggestion } from './allocation-suggestion';
@@ -124,6 +122,100 @@ const TokenBalance = ({ balanceInfo }: { balanceInfo: any }) => {
   );
 };
 
+// 转账结果组件
+const TransactionResult = ({ transactionData }: { transactionData: any }) => {
+  const isSuccess = transactionData.success;
+  
+  return (
+    <div className={`flex flex-col gap-4 rounded-2xl p-4 ${isSuccess ? 'bg-green-800' : 'bg-red-800'} max-w-[500px]`}>
+      <div className="flex flex-row justify-between items-center">
+        <div className="flex flex-row gap-2 items-center">
+          <div className={`size-10 rounded-full ${isSuccess ? 'bg-green-200' : 'bg-red-200'} flex items-center justify-center`}>
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              width="24" 
+              height="24" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              className={isSuccess ? 'text-green-800' : 'text-red-800'}
+            >
+              {isSuccess ? (
+                <>
+                  <path d="M12 2v4" />
+                  <path d="m16.24 7.76-2.12 2.12" />
+                  <path d="M19 12h-4" />
+                  <path d="m16.24 16.24-2.12-2.12" />
+                  <path d="M12 19v-4" />
+                  <path d="m7.76 16.24 2.12-2.12" />
+                  <path d="M6 12h4" />
+                  <path d="m7.76 7.76 2.12 2.12" />
+                </>
+              ) : (
+                <>
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="m15 9-6 6" />
+                  <path d="m9 9 6 6" />
+                </>
+              )}
+            </svg>
+          </div>
+          <div className="text-2xl font-medium text-white">
+            {isSuccess ? 'Transaction Successful' : 'Transaction Failed'}
+          </div>
+        </div>
+      </div>
+
+      {isSuccess && transactionData.transaction ? (
+        <div className="flex flex-col gap-3">
+          <div className={`flex flex-col gap-2 ${isSuccess ? 'bg-green-700' : 'bg-red-700'} rounded-xl p-3`}>
+            <div className={`text-sm ${isSuccess ? 'text-green-200' : 'text-red-200'}`}>Transaction Hash</div>
+            <div className="text-white font-mono text-sm break-all">{transactionData.transaction.hash}</div>
+          </div>
+          
+          <div className="flex flex-row gap-3">
+            <div className={`flex-1 flex flex-col gap-2 ${isSuccess ? 'bg-green-700' : 'bg-red-700'} rounded-xl p-3`}>
+              <div className={`text-sm ${isSuccess ? 'text-green-200' : 'text-red-200'}`}>From</div>
+              <div className="text-white font-mono text-sm break-all">{transactionData.transaction.from}</div>
+            </div>
+            
+            <div className={`flex-1 flex flex-col gap-2 ${isSuccess ? 'bg-green-700' : 'bg-red-700'} rounded-xl p-3`}>
+              <div className={`text-sm ${isSuccess ? 'text-green-200' : 'text-red-200'}`}>To</div>
+              <div className="text-white font-mono text-sm break-all">{transactionData.transaction.to}</div>
+            </div>
+          </div>
+          
+          <div className={`flex flex-col gap-2 ${isSuccess ? 'bg-green-700' : 'bg-red-700'} rounded-xl p-3`}>
+            <div className={`text-sm ${isSuccess ? 'text-green-200' : 'text-red-200'}`}>Amount</div>
+            <div className="text-white font-mono text-sm">{transactionData.transaction.amount} WEI</div>
+          </div>
+          
+          <div className="flex justify-end mt-2">
+            <a 
+              href={transactionData.transaction.explorerLink} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className={`text-sm ${isSuccess ? 'bg-green-600' : 'bg-red-600'} text-white py-2 px-4 rounded-lg hover:brightness-110 transition-all`}
+            >
+              View on Explorer
+            </a>
+          </div>
+        </div>
+      ) : (
+        <div className={`flex flex-col gap-2 ${isSuccess ? 'bg-green-700' : 'bg-red-700'} rounded-xl p-3`}>
+          <div className={`text-sm ${isSuccess ? 'text-green-200' : 'text-red-200'}`}>Error</div>
+          <div className="text-white">{transactionData.error}</div>
+        </div>
+      )}
+      
+      <div className={`text-xs text-right ${isSuccess ? 'text-green-300' : 'text-red-300'}`}>Powered by Coinbase AgentKit</div>
+    </div>
+  );
+};
+
 const PurePreviewMessage = ({
   chatId,
   message,
@@ -203,9 +295,6 @@ const PurePreviewMessage = ({
               }
 
               if (type === 'text') {
-                // 检查文本是否包含转账信息
-                const transactionInfo = parseTransactionMessage(part.text);
-                
                 if (mode === 'view') {
                   return (
                     <div key={key} className="flex flex-row gap-2 items-start">
@@ -234,16 +323,7 @@ const PurePreviewMessage = ({
                             message.role === 'user',
                         })}
                       >
-                        {/* 如果是转账信息，显示交易卡片 */}
-                        {transactionInfo ? (
-                          <>
-                            <TransactionCard transaction={transactionInfo.data} />
-                            {/* 显示原始文本（可选，您可以注释掉这部分来只显示卡片） */}
-                            <Markdown>{part.text}</Markdown>
-                          </>
-                        ) : (
-                          <Markdown>{part.text}</Markdown>
-                        )}
+                        <Markdown>{part.text}</Markdown>
                       </div>
                     </div>
                   );
@@ -320,6 +400,10 @@ const PurePreviewMessage = ({
                         <WalletInfo walletInfo={args} />
                       ) : toolName === 'getMyTokenBalance' || toolName === 'getTokenBalance' ? (
                         <TokenBalance balanceInfo={args} />
+                      ) : toolName === 'transferTokens' ? (
+                        <div className="text-sm text-muted-foreground">
+                          Processing transaction...
+                        </div>
                       ) : null}
                     </div>
                   );
@@ -411,6 +495,8 @@ const PurePreviewMessage = ({
                         <WalletInfo walletInfo={result} />
                       ) : toolName === 'getMyTokenBalance' || toolName === 'getTokenBalance' ? (
                         <TokenBalance balanceInfo={result} />
+                      ) : toolName === 'transferTokens' ? (
+                        <TransactionResult transactionData={result} />
                       ) : toolName === 'getMorphoVaults' ? (
                         <div className="rounded-md border p-4 bg-background">
                           <div className="flex flex-row items-center justify-between mb-3">

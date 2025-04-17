@@ -254,6 +254,81 @@ export const getMyTokenBalance = tool({
   },
 });
 
+// Transfer tokens tool
+export const transferTokens = tool({
+  description: 'Transfer native tokens (ETH) from your wallet to another address',
+  parameters: z.object({
+    toAddress: z.string().describe('The destination Ethereum address to send tokens to'),
+    amount: z.string().describe('The amount to send in WEI (e.g. "1000000000000000" for 0.001 ETH)'),
+  }),
+  execute: async ({ toAddress, amount }) => {
+    if (!walletProvider) {
+      console.log('🚨 钱包未初始化，在 transferTokens 执行初始化...');
+      await initializeAgentKit();
+    }
+
+    if (!walletProvider) {
+      throw new Error('Wallet still not initialized after attempt.');
+    }
+
+    try {
+      console.log(`🔄 准备转账: ${amount} WEI 到 ${toAddress}`);
+      
+      // 验证接收地址格式
+      if (!toAddress.startsWith('0x') || toAddress.length !== 42) {
+        throw new Error('Invalid Ethereum address format. Address must start with 0x and be 42 characters long.');
+      }
+      
+      // 验证金额为有效数字
+      const amountBigInt = BigInt(amount);
+      if (amountBigInt <= 0n) {
+        throw new Error('Amount must be greater than 0');
+      }
+      
+      // 检查余额是否足够
+      const balance = await walletProvider.getBalance();
+      console.log(`💰 当前余额: ${balance} WEI`);
+      
+      if (balance < amountBigInt) {
+        return {
+          success: false,
+          error: `Insufficient funds. Current balance: ${balance} WEI, Requested amount: ${amount} WEI`,
+          transaction: null,
+        };
+      }
+      
+      // 执行转账
+      const txHash = await walletProvider.sendTransaction({
+        to: toAddress as Address,
+        value: amountBigInt,
+      });
+      
+      console.log(`✅ 转账成功: ${txHash}`);
+      
+      return {
+        success: true,
+        transaction: {
+          hash: txHash,
+          from: smartWalletAddress,
+          to: toAddress,
+          amount: amount,
+          network: currentNetworkId,
+          explorerLink: `${currentNetworkId === 'base-sepolia' 
+            ? 'https://sepolia.basescan.org/tx/' 
+            : 'https://basescan.org/tx/'}${txHash}`,
+        },
+      };
+    } catch (error) {
+      console.error("❌ 转账失败:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred during transfer',
+        transaction: null,
+      };
+    }
+  },
+});
+
 interface AgentKitToolsProps {
   session: Session;
   dataStream: DataStreamWriter;
@@ -268,6 +343,7 @@ export async function getAgentKitTools({ session, dataStream }: AgentKitToolsPro
         getMyWalletAddress,
         getMyTokenBalance,
         getMorphoVaults: getMorphoVaultsFromAPI,
+        transferTokens,
       };
     }
 
@@ -281,6 +357,7 @@ export async function getAgentKitTools({ session, dataStream }: AgentKitToolsPro
       getMyWalletAddress,
       getMyTokenBalance,
       getMorphoVaults: getMorphoVaultsFromAPI,
+      transferTokens,
     };
   } catch (error) {
     console.error("❌ 获取 AgentKit tools 失败:", error);
@@ -288,6 +365,7 @@ export async function getAgentKitTools({ session, dataStream }: AgentKitToolsPro
       getMyWalletAddress,
       getMyTokenBalance,
       getMorphoVaults: getMorphoVaultsFromAPI,
+      transferTokens,
     };
   }
 }

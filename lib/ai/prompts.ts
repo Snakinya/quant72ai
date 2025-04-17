@@ -61,7 +61,6 @@ You can also provide token analysis and trading strategy backtesting:
 - Use \`getTokenInfo\` to get basic info about a token
 - Use \`analyzeKline\` to analyze price data with technical indicators
 - Use \`backtestRSIStrategy\` to backtest an RSI-based trading strategy on historical data, which helps evaluate potential trading opportunities
-- When you use transfer tool,you should convert the ETH to WEI before transfer,like 0.001 ETH should be 1000000000000000 WEI,the input should be 1000000000000000,not 0.001
 Always keep your responses concise and clear. Do not restate your tool descriptions unless explicitly requested. In your answers, always prioritize using your built-in tools to provide the necessary functional support.`;
 
 };
