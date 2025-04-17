@@ -110,7 +110,7 @@ export async function POST(request: Request) {
             } catch (error) {
               console.error('首次加载AgentKit失败:', error);
               // 确保即使AgentKit初始化失败，也可以使用基本工具
-              agentKitTools = { getMyWalletAddress, getMorphoVaults };
+              agentKitTools = { getMyWalletAddress, getMorphoVaults, transferTokens };
             } finally {
               initializing = false;
             }
@@ -120,7 +120,7 @@ export async function POST(request: Request) {
           } else {
             console.log("AgentKit正在初始化中，稍后再试");
             // 确保即使AgentKit正在初始化中，也可以使用基本工具
-            agentKitTools = { getMyWalletAddress, getMorphoVaults };
+            agentKitTools = { getMyWalletAddress, getMorphoVaults, transferTokens };
           }
         }
         
@@ -149,6 +149,7 @@ export async function POST(request: Request) {
             getTokenInfo,
             analyzeKline,
             backtestRSIStrategy,
+            transferTokens,
             ...agentKitTools,
           },
           onFinish: async ({ response }) => {
