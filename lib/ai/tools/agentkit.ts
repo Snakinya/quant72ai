@@ -284,7 +284,7 @@ export const getMyTokenBalance = tool({
         network: {
           protocolFamily: 'evm',
           networkId: userNetworkId,
-          chainId: userNetworkId === 'base-sepolia' ? 84532 : 8453
+          chainId: userNetworkId === 'base-mainnet' ? 8453 : 8453
         },
         nativeBalance: nativeBalance ? `${nativeBalance} WEI` : '0 WEI',
         tokens: []
@@ -297,7 +297,7 @@ export const getMyTokenBalance = tool({
         network: {
           protocolFamily: 'evm',
           networkId: userNetworkId,
-          chainId: userNetworkId === 'base-sepolia' ? 84532 : 8453
+          chainId: userNetworkId === 'base-mainnet' ? 8453 : 8453
         },
         nativeBalance: '0 WEI',
         tokens: []

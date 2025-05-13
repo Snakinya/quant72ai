@@ -11,36 +11,38 @@ export const backtestRSIStrategy = tool({
     rsiPeriod: z.number().default(14).describe('RSI calculation period'),
     oversoldThreshold: z.number().default(30).describe('RSI oversold threshold'),
     overboughtThreshold: z.number().default(70).describe('RSI overbought threshold'),
+    chain: z.string().default('base').describe('Blockchain network, either "base" or "bsc"')
   }),
-  execute: async ({ poolAddress, timeBucket, limit, rsiPeriod, oversoldThreshold, overboughtThreshold }) => {
-    console.log("[BACKTEST] Starting with params:", { poolAddress, timeBucket, limit });
+  execute: async ({ poolAddress, timeBucket, limit, rsiPeriod, oversoldThreshold, overboughtThreshold, chain }) => {
+    console.log("[BACKTEST] Starting with params:", { poolAddress, timeBucket, limit, chain });
     
     try {
       // Get current timestamp (seconds)
       const requestEndTime = Math.floor(Date.now() / 1000);
       
       // Fetch K-line data
-      console.log("[BACKTEST] Fetching K-line data...");
+      console.log(`[BACKTEST] Fetching K-line data from ${chain} chain...`);
       const response = await fetch(
-        `https://api.mevx.io/api/v1/candlesticks?chain=base&poolAddress=${poolAddress}&timeBucket=${timeBucket}&endTime=${requestEndTime}&outlier=true&limit=${limit}`,
+        `https://api.mevx.io/api/v1/candlesticks?chain=${chain}&poolAddress=${poolAddress}&timeBucket=${timeBucket}&endTime=${requestEndTime}&outlier=true&limit=${limit}`,
       );
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch K-line data: ${response.status} ${response.statusText}`);
+        throw new Error(`Failed to fetch K-line data from ${chain} chain: ${response.status} ${response.statusText}`);
       }
 
       const klineData = await response.json();
       const candles = klineData.candlesticks || [];
-      console.log(`[BACKTEST] Received ${candles.length} candles`);
+      console.log(`[BACKTEST] Received ${candles.length} candles from ${chain} chain`);
       
       if (candles.length === 0) {
         return {
           tokenSymbol: "Unknown",
           poolAddress,
           timeBucket,
+          chain,
           dataStatistics: {
             totalCandles: 0,
-            message: "No candlestick data available"
+            message: `No candlestick data available on ${chain} chain`
           },
           backtestResults: null
         };
@@ -57,7 +59,7 @@ export const backtestRSIStrategy = tool({
       let tokenSymbol = 'Unknown';
       try {
         const tokenInfoResponse = await fetch(
-          `https://api.mevx.io/api/v1/pools/search?q=${poolAddress}`,
+          `https://api.mevx.io/api/v1/pools/search?q=${poolAddress}&chain=${chain}`,
         );
         
         if (tokenInfoResponse.ok) {
@@ -67,7 +69,7 @@ export const backtestRSIStrategy = tool({
           }
         }
       } catch (error) {
-        console.error('[BACKTEST] Error getting token symbol:', error);
+        console.error(`[BACKTEST] Error getting token symbol from ${chain} chain:`, error);
       }
       
       // Calculate basic statistics
@@ -78,7 +80,7 @@ export const backtestRSIStrategy = tool({
       const priceChangePct = startPrice > 0 ? ((endPrice - startPrice) / startPrice) * 100 : 0;
       
       // Run actual RSI backtest
-      console.log("[BACKTEST] Running RSI backtest strategy...");
+      console.log(`[BACKTEST] Running RSI backtest strategy on ${chain} chain...`);
       try {
         const backtestResult = await runRSIBacktest(
           candles,
@@ -145,6 +147,7 @@ export const backtestRSIStrategy = tool({
           tokenSymbol,
           poolAddress,
           timeBucket,
+          chain,
           dataStatistics: {
             totalCandles: candles.length,
             timeRange: `${startTimeStr} to ${endTimeStr}`,
@@ -167,13 +170,14 @@ export const backtestRSIStrategy = tool({
         console.log("[BACKTEST] Successfully returning result");
         return result;
       } catch (backtestError) {
-        console.error("[BACKTEST] Error during backtest execution:", backtestError);
+        console.error(`[BACKTEST] Error during backtest execution on ${chain} chain:`, backtestError);
         
         // Return basic data with error info
         return {
           tokenSymbol,
           poolAddress,
           timeBucket,
+          chain,
           dataStatistics: {
             totalCandles: candles.length,
             timeRange: `${startTimeStr} to ${endTimeStr}`,
@@ -183,7 +187,7 @@ export const backtestRSIStrategy = tool({
           },
           backtestError: {
             message: backtestError instanceof Error ? backtestError.message : "Unknown backtest error",
-            fallback: "Failed to execute RSI strategy backtest, but market data is available"
+            fallback: `Failed to execute RSI strategy backtest on ${chain} chain, but market data is available`
           },
           // Fallback to simplified estimation
           estimatedResults: {
@@ -194,13 +198,14 @@ export const backtestRSIStrategy = tool({
         };
       }
     } catch (error) {
-      console.error("[BACKTEST] Critical error:", error);
+      console.error(`[BACKTEST] Critical error on ${chain} chain:`, error);
       // Return minimal error response
       return {
         error: true,
         message: error instanceof Error ? error.message : "Unknown error occurred",
         poolAddress,
-        timeBucket
+        timeBucket,
+        chain
       };
     }
   },

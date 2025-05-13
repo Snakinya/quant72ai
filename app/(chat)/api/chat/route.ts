@@ -30,11 +30,13 @@ import { isProductionEnvironment } from '@/lib/constants';
 import { myProvider } from '@/lib/ai/providers';
 import { getAgentKitTools, getMyWalletAddress, transferTokens } from '@/lib/ai/tools/agentkit';
 import { getMorphoVaults } from '@/lib/ai/tools/morpho';
+import { getBSCToolkit, cleanupBSCToolkit } from '@/lib/ai/tools/bsctoolkit';
 import { z } from 'zod';
+import { cookies } from 'next/headers';
 
 export const maxDuration = 60;
 
-// 全局变量存储AgentKit状态
+// 全局变量存储工具状态
 let agentKitInitialized = false;
 let initializing = false;
 let cachedAgentKitTools: Record<string, any> = {};
@@ -45,10 +47,12 @@ export async function POST(request: Request) {
       id,
       messages,
       selectedChatModel,
+      selectedChain = 'base',
     }: {
       id: string;
       messages: Array<UIMessage>;
       selectedChatModel: string;
+      selectedChain?: 'base' | 'bsc';
     } = await request.json();
 
     const session = await auth();
@@ -95,110 +99,157 @@ export async function POST(request: Request) {
         // 根据选择的模型确定是否使用工具
         const shouldUseTools = selectedChatModel !== 'chat-model-reasoning';
         
-        // 确保AgentKit只在使用工具时初始化，而且只初始化一次
+        // 确保AgentKit和BSCToolkit只在使用工具时并且选择了相应的链时初始化
         let agentKitTools: Record<string, any> = {};
+        let bscTools: Record<string, any> = {};
         
-        if (shouldUseTools) {
-          if (!agentKitInitialized && !initializing) {
-            initializing = true;
-            try {
-              console.log("首次初始化AgentKit...");
-              agentKitTools = await getAgentKitTools({ session, dataStream });
-              cachedAgentKitTools = agentKitTools; // 缓存工具
-              agentKitInitialized = true;
-              console.log("可用工具列表:", Object.keys(agentKitTools));
-            } catch (error) {
-              console.error('首次加载AgentKit失败:', error);
-              // 确保即使AgentKit初始化失败，也可以使用基本工具
-              agentKitTools = { getMyWalletAddress, getMorphoVaults, transferTokens };
-            } finally {
-              initializing = false;
-            }
-          } else if (agentKitInitialized) {
-            console.log("使用已初始化的AgentKit");
-            agentKitTools = cachedAgentKitTools; // 使用缓存的工具
-          } else {
-            console.log("AgentKit正在初始化中，稍后再试");
-            // 确保即使AgentKit正在初始化中，也可以使用基本工具
-            agentKitTools = { getMyWalletAddress, getMorphoVaults, transferTokens };
-          }
-        }
-        
-        // 构建激活工具列表
-        const baseTools = ['getWeather', 'createDocument', 'updateDocument', 'requestSuggestions', 'getMyWalletAddress', 'getMorphoVaults', 'getTokenInfo', 'analyzeKline', 'backtestRSIStrategy', 'transferTokens'];
-        const agentKitToolNames = Object.keys(agentKitTools).filter(key => !baseTools.includes(key));
-        const activeTools = [...baseTools, ...agentKitToolNames];
-        
-        const result = streamText({
-          model: myProvider.languageModel(selectedChatModel),
-          system: systemPrompt({ selectedChatModel }),
-          messages,
-          maxSteps: 5,
-          experimental_activeTools: !shouldUseTools ? [] : activeTools as any,
-          experimental_transform: smoothStream({ chunking: 'word' }),
-          experimental_generateMessageId: generateUUID,
-          tools: {
-            getWeather,
-            createDocument: createDocument({ session, dataStream }),
-            updateDocument: updateDocument({ session, dataStream }),
-            requestSuggestions: requestSuggestions({
-              session,
-              dataStream,
-            }),
-            getMorphoVaults,
-            getTokenInfo,
-            analyzeKline,
-            backtestRSIStrategy,
-            transferTokens,
-            ...agentKitTools,
-          },
-          onFinish: async ({ response }) => {
-            if (session.user?.id) {
-              try {
-                const assistantId = getTrailingMessageId({
-                  messages: response.messages.filter(
-                    (message) => message.role === 'assistant',
-                  ),
-                });
-
-                if (!assistantId) {
-                  throw new Error('No assistant message found!');
+        try {
+          if (shouldUseTools) {
+            // 根据当前选择的链初始化相应的工具
+            if (selectedChain === 'base') {
+              // 初始化Base链工具
+              if (!agentKitInitialized && !initializing) {
+                initializing = true;
+                try {
+                  console.log("首次初始化AgentKit...");
+                  agentKitTools = await getAgentKitTools({ session, dataStream });
+                  cachedAgentKitTools = agentKitTools; // 缓存工具
+                  agentKitInitialized = true;
+                  console.log("AgentKit工具初始化完成");
+                } catch (error) {
+                  console.error('首次加载AgentKit失败:', error);
+                  // 确保即使AgentKit初始化失败，也可以使用基本工具
+                  agentKitTools = { getMyWalletAddress, getMorphoVaults, transferTokens };
+                } finally {
+                  initializing = false;
                 }
-
-                const [, assistantMessage] = appendResponseMessages({
-                  messages: [userMessage],
-                  responseMessages: response.messages,
-                });
-
-                await saveMessages({
-                  messages: [
-                    {
-                      id: assistantId,
-                      chatId: id,
-                      role: assistantMessage.role,
-                      parts: assistantMessage.parts,
-                      attachments:
-                        assistantMessage.experimental_attachments ?? [],
-                      createdAt: new Date(),
-                    },
-                  ],
-                });
-              } catch (_) {
-                console.error('Failed to save chat');
+              } else if (agentKitInitialized) {
+                console.log("使用已初始化的AgentKit");
+                agentKitTools = cachedAgentKitTools; // 使用缓存的工具
+              } else {
+                console.log("AgentKit正在初始化中，稍后再试");
+                // 确保即使AgentKit正在初始化中，也可以使用基本工具
+                agentKitTools = { getMyWalletAddress, getMorphoVaults, transferTokens };
+              }
+            } else if (selectedChain === 'bsc') {
+              // 简化BSC链工具初始化逻辑，直接使用bsctoolkit.ts中的缓存机制
+              try {
+                console.log("获取BSCToolkit...");
+                // 直接调用getBSCToolkit，它会内部处理缓存逻辑
+                bscTools = await getBSCToolkit();
+                console.log(`获取到BSC工具，包含${Object.keys(bscTools).length}个工具`);
+              } catch (error) {
+                console.error('加载BSCToolkit失败:', error);
+                bscTools = {}; // 出错时使用空对象
               }
             }
-          },
-          experimental_telemetry: {
-            isEnabled: isProductionEnvironment,
-            functionId: 'stream-text',
-          },
-        });
+          }
+          
+          // 构建激活工具列表
+          const baseTools = ['getWeather', 'createDocument', 'updateDocument', 'requestSuggestions', 'getTokenInfo', 'analyzeKline', 'backtestRSIStrategy'];
 
-        result.consumeStream();
+          // 根据选择的链添加不同的工具
+          let chainTools: string[] = [];
+          if (selectedChain === 'base') {
+            chainTools = ['getMyWalletAddress', 'getMorphoVaults', 'transferTokens', ...Object.keys(agentKitTools)];
+          } else if (selectedChain === 'bsc') {
+            chainTools = [...Object.keys(bscTools)];
+          }
 
-        result.mergeIntoDataStream(dataStream, {
-          sendReasoning: true,
-        });
+          const activeTools = [...baseTools, ...chainTools.filter(key => !baseTools.includes(key))];
+          
+          console.log(`当前链: ${selectedChain}, 可用工具列表:`, activeTools);
+          
+          // 增强系统提示以说明当前链
+          const chainInfo = selectedChain === 'base' 
+            ? '用户当前在Base链上操作。Base是一个以太坊L2网络，速度快、费用低。'
+            : '用户当前在BSC链上操作。BSC (BNB Smart Chain) 是币安智能链，支持智能合约并与以太坊兼容。';
+            
+          const enhancedPrompt = systemPrompt({ selectedChatModel }) + '\n\n' + chainInfo;
+          
+          const result = streamText({
+            model: myProvider.languageModel(selectedChatModel),
+            system: enhancedPrompt,
+            messages,
+            maxSteps: 5,
+            experimental_activeTools: !shouldUseTools ? [] : activeTools as any,
+            experimental_transform: smoothStream({ chunking: 'word' }),
+            experimental_generateMessageId: generateUUID,
+            tools: {
+              getWeather,
+              createDocument: createDocument({ session, dataStream }),
+              updateDocument: updateDocument({ session, dataStream }),
+              requestSuggestions: requestSuggestions({
+                session,
+                dataStream,
+              }),
+              getTokenInfo,
+              analyzeKline,
+              backtestRSIStrategy,
+              ...(selectedChain === 'base' ? { getMorphoVaults, transferTokens, ...agentKitTools } : {}),
+              ...(selectedChain === 'bsc' ? bscTools : {}),
+            },
+            onFinish: async ({ response }) => {
+              if (session.user?.id) {
+                try {
+                  const assistantId = getTrailingMessageId({
+                    messages: response.messages.filter(
+                      (message) => message.role === 'assistant',
+                    ),
+                  });
+
+                  if (!assistantId) {
+                    throw new Error('No assistant message found!');
+                  }
+
+                  const [, assistantMessage] = appendResponseMessages({
+                    messages: [userMessage],
+                    responseMessages: response.messages,
+                  });
+
+                  await saveMessages({
+                    messages: [
+                      {
+                        id: assistantId,
+                        chatId: id,
+                        role: assistantMessage.role,
+                        parts: assistantMessage.parts,
+                        attachments:
+                          assistantMessage.experimental_attachments ?? [],
+                        createdAt: new Date(),
+                      },
+                    ],
+                  });
+                } catch (_) {
+                  console.error('Failed to save chat');
+                }
+              }
+            },
+            experimental_telemetry: {
+              isEnabled: isProductionEnvironment,
+              functionId: 'stream-text',
+            },
+          });
+
+          result.consumeStream();
+
+          result.mergeIntoDataStream(dataStream, {
+            sendReasoning: true,
+          });
+        } finally {
+          // 如果使用的是BSC链，在响应结束时清理MCP客户端
+          if (selectedChain === 'bsc') {
+            try {
+              console.log("清理BSCToolkit MCP客户端...");
+              // 注意：不传用户ID，避免清理缓存的工具，只清理当前会话的MCP客户端
+              // await cleanupBSCToolkit(); 
+              // 上面的代码会清理所有用户的连接，可能影响性能，因此我们通常不在每次请求后清理
+              // 实际部署时，可以考虑在应用关闭时或在定时任务中清理长时间未使用的连接
+            } catch (cleanupError) {
+              console.error("清理BSCToolkit时出错:", cleanupError);
+            }
+          }
+        }
       },
       onError: (error) => {
         console.error('Stream error:', error);

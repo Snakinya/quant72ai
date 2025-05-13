@@ -61,23 +61,24 @@ export const getTokenInfo = tool({
   description: 'Get basic information and trading data for a token',
   parameters: z.object({
     poolAddress: z.string().describe('Pool address of the token'),
+    chain: z.string().default('base').describe('Blockchain network, either "base" or "bsc"')
   }),
-  execute: async ({ poolAddress }) => {
+  execute: async ({ poolAddress, chain }) => {
     try {
-      const cacheKey = `info_${poolAddress}`;
+      const cacheKey = `info_${chain}_${poolAddress}`;
       const tokenData = await fetchWithCache(
-        `https://api.mevx.io/api/v1/pools/search?q=${poolAddress}`,
+        `https://api.mevx.io/api/v1/pools/search?q=${poolAddress}&chain=${chain}`,
         cacheKey,
         'tokenInfo'
       );
       return tokenData;
     } catch (error) {
-      console.error('获取代币信息失败:', error);
+      console.error(`获取${chain}链代币信息失败:`, error);
       // 修复类型错误：处理unknown类型的error
       if (error instanceof Error) {
-        throw new Error(`获取代币信息失败: ${error.message}`);
+        throw new Error(`获取${chain}链代币信息失败: ${error.message}`);
       } else {
-        throw new Error(`获取代币信息失败: ${String(error)}`);
+        throw new Error(`获取${chain}链代币信息失败: ${String(error)}`);
       }
     }
   },
@@ -89,18 +90,19 @@ export const analyzeKline = tool({
     poolAddress: z.string().describe('Pool address of the token'),
     timeBucket: z.string().default('15s').describe('K-line time period, such as 15s, 1m, 5m, 15m, 1h'),
     limit: z.number().default(150).describe('Number of K-line candles to fetch'),
+    chain: z.string().default('base').describe('Blockchain network, either "base" or "bsc"')
   }),
-  execute: async ({ poolAddress, timeBucket, limit }) => {
-    console.log(`analyzeKline called with: poolAddress=${poolAddress}, timeBucket=${timeBucket}, limit=${limit}`);
+  execute: async ({ poolAddress, timeBucket, limit, chain }) => {
+    console.log(`analyzeKline called with: poolAddress=${poolAddress}, timeBucket=${timeBucket}, limit=${limit}, chain=${chain}`);
     
     try {
       // 获取当前时间戳 (秒)
       const endTime = Math.floor(Date.now() / 1000);
       
       // 一次性获取代币信息
-      const tokenInfoCacheKey = `info_${poolAddress}`;
+      const tokenInfoCacheKey = `info_${chain}_${poolAddress}`;
       const tokenData = await fetchWithCache(
-        `https://api.mevx.io/api/v1/pools/search?q=${poolAddress}`,
+        `https://api.mevx.io/api/v1/pools/search?q=${poolAddress}&chain=${chain}`,
         tokenInfoCacheKey,
         'tokenInfo'
       );
@@ -109,17 +111,17 @@ export const analyzeKline = tool({
       const actualPoolAddress = extractPoolAddress(tokenData) || poolAddress;
       const tokenSymbol = extractTokenSymbol(tokenData);
       
-      console.log(`Using pool address: ${actualPoolAddress} for token: ${tokenSymbol}`);
+      console.log(`Using pool address: ${actualPoolAddress} for token: ${tokenSymbol} on ${chain} chain`);
       
       // 获取K线数据
-      const klineCacheKey = `kline_${actualPoolAddress}_${timeBucket}_${limit}_${endTime}`;
+      const klineCacheKey = `kline_${chain}_${actualPoolAddress}_${timeBucket}_${limit}_${endTime}`;
       const klineData = await fetchWithCache(
-        `https://api.mevx.io/api/v1/candlesticks?chain=base&poolAddress=${actualPoolAddress}&timeBucket=${timeBucket}&endTime=${endTime}&outlier=true&limit=${limit}`,
+        `https://api.mevx.io/api/v1/candlesticks?chain=${chain}&poolAddress=${actualPoolAddress}&timeBucket=${timeBucket}&endTime=${endTime}&outlier=true&limit=${limit}`,
         klineCacheKey,
         'klineData'
       );
       
-      console.log(`K-line data fetched: ${klineData.candlesticks?.length || 0} candles`);
+      console.log(`K-line data fetched: ${klineData.candlesticks?.length || 0} candles from ${chain} chain`);
       
       // 计算技术指标
       const candles = klineData.candlesticks || [];
@@ -129,6 +131,7 @@ export const analyzeKline = tool({
       const result = {
         tokenSymbol,
         timeBucket,
+        chain,
         poolAddress: actualPoolAddress,
         analysis: {
           trend: analysisResult.trend,
@@ -162,7 +165,7 @@ export const analyzeKline = tool({
       
       return result;
     } catch (error) {
-      console.error('K线分析失败:', error);
+      console.error(`${chain}链K线分析失败:`, error);
       // 修复类型错误：处理 unknown 类型的 error
       let errorMessage = '未知错误';
       if (error instanceof Error) {
@@ -174,11 +177,12 @@ export const analyzeKline = tool({
       return {
         tokenSymbol: 'Unknown',
         timeBucket,
+        chain,
         poolAddress,
         analysis: {
           trend: 'Neutral',
           confidence: 50,
-          reason: `分析失败: ${errorMessage}`,
+          reason: `${chain}链分析失败: ${errorMessage}`,
           indicators: {}
         }
       };

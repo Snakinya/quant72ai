@@ -2,6 +2,8 @@ import { Toaster } from 'sonner';
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
+import { ChainProvider } from '@/lib/context/chain-context';
+import { GlobalNav } from '@/components/global-nav';
 
 import './globals.css';
 
@@ -76,8 +78,11 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Toaster position="top-center" />
-          {children}
+          <ChainProvider>
+            <Toaster position="top-center" />
+            <GlobalNav />
+            {children}
+          </ChainProvider>
         </ThemeProvider>
       </body>
     </html>

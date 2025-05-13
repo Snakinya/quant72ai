@@ -28,96 +28,126 @@ import { BacktestResult } from './backtest-result';
 
 // 钱包信息组件
 const WalletInfo = ({ walletInfo }: { walletInfo: any }) => {
+  // 确定网络和样式
+  const isBaseNetwork = walletInfo.network === 'base' || walletInfo.network === 'base-sepolia';
+  const isBscNetwork = walletInfo.network === 'bsc';
+  
+  // 根据网络选择样式 - 更优雅简约的配色
+  const accentColor = isBaseNetwork 
+    ? 'text-blue-600 dark:text-blue-400' 
+    : (isBscNetwork ? 'text-amber-600 dark:text-amber-400' : 'text-indigo-600 dark:text-indigo-400');
+  const iconColor = isBaseNetwork 
+    ? 'text-blue-500 dark:text-blue-400' 
+    : (isBscNetwork ? 'text-amber-500 dark:text-amber-400' : 'text-indigo-500 dark:text-indigo-400');
+  const bgColor = 'bg-slate-100 dark:bg-slate-800';
+  const textColor = 'text-slate-800 dark:text-slate-100';
+  
   return (
-    <div className="flex flex-col gap-4 rounded-2xl p-4 bg-indigo-800 max-w-[500px]">
-      <div className="flex flex-row justify-between items-center">
-        <div className="flex flex-row gap-2 items-center">
-          <div className="size-10 rounded-full bg-indigo-200 flex items-center justify-center">
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              width="24" 
-              height="24" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              className="text-indigo-800"
-            >
-              <rect width="20" height="14" x="2" y="5" rx="2" />
-              <path d="M16 14v1a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-1" />
-            </svg>
-          </div>
-          <div className="text-2xl font-medium text-indigo-50">Wallet Info</div>
+    <div className={`flex flex-col gap-2 rounded-lg p-3 border ${bgColor} max-w-[400px]`}>
+      <div className="flex items-center gap-2">
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          width="20" 
+          height="20" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="currentColor" 
+          strokeWidth="2" 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          className={iconColor}
+        >
+          <rect width="20" height="14" x="2" y="5" rx="2" />
+          <path d="M16 14v1a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-1" />
+        </svg>
+        <div className={`text-sm font-medium ${accentColor}`}>
+          Wallet Info
+          <span className="ml-2 text-xs px-1.5 py-0.5 rounded uppercase bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+            {walletInfo.network}
+          </span>
         </div>
-        <div className="text-indigo-50 bg-indigo-700 px-2 py-1 rounded-lg">{walletInfo.network}</div>
       </div>
 
-      <div className="flex flex-col gap-2 bg-indigo-700 rounded-xl p-3">
-        <div className="text-indigo-200 text-sm">Wallet Address</div>
-        <div className="text-indigo-50 font-mono text-sm break-all">{walletInfo.walletAddress}</div>
+      <div className="mt-1 flex flex-col gap-1">
+        <div className="text-xs text-slate-500 dark:text-slate-400">Address</div>
+        <div className={`text-xs font-mono ${textColor} break-all`}>{walletInfo.walletAddress}</div>
       </div>
 
-      <div className="text-indigo-300 text-xs text-right">Powered by Coinbase AgentKit</div>
+      {walletInfo.error && (
+        <div className="mt-1 text-xs text-red-500 dark:text-red-400">
+          Error: {walletInfo.error}
+        </div>
+      )}
     </div>
   );
 };
 
 // 代币余额组件
 const TokenBalance = ({ balanceInfo }: { balanceInfo: any }) => {
+  const networkId = balanceInfo.network?.networkId || 'base-sepolia';
+  const isBaseNetwork = networkId.includes('base');
+  const isBscNetwork = networkId.includes('bsc');
+  
+  // 根据网络选择样式 - 更优雅简约的配色
+  const accentColor = isBaseNetwork 
+    ? 'text-blue-600 dark:text-blue-400' 
+    : (isBscNetwork ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400');
+  const iconColor = isBaseNetwork 
+    ? 'text-blue-500 dark:text-blue-400' 
+    : (isBscNetwork ? 'text-amber-500 dark:text-amber-400' : 'text-emerald-500 dark:text-emerald-400');
+  const bgColor = 'bg-slate-100 dark:bg-slate-800';
+  const textColor = 'text-slate-800 dark:text-slate-100';
+  
   return (
-    <div className="flex flex-col gap-4 rounded-2xl p-4 bg-blue-800 max-w-[500px]">
-      <div className="flex flex-row justify-between items-center">
-        <div className="flex flex-row gap-2 items-center">
-          <div className="size-10 rounded-full bg-blue-200 flex items-center justify-center">
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              width="24" 
-              height="24" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              className="text-blue-800"
-            >
-              <circle cx="12" cy="12" r="8" />
-              <path d="M9.5 9.5 14.5 14.5" />
-              <path d="M14.5 9.5 9.5 14.5" />
-            </svg>
-          </div>
-          <div className="text-2xl font-medium text-blue-50">Token Balance</div>
+    <div className={`flex flex-col gap-2 rounded-lg p-3 border ${bgColor} max-w-[400px]`}>
+      <div className="flex items-center gap-2">
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          width="20" 
+          height="20" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="currentColor" 
+          strokeWidth="2" 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          className={iconColor}
+        >
+          <circle cx="12" cy="12" r="8" />
+          <line x1="9.5" y1="9.5" x2="14.5" y2="14.5" />
+          <line x1="14.5" y1="9.5" x2="9.5" y2="14.5" />
+        </svg>
+        <div className={`text-sm font-medium ${accentColor}`}>
+          Token Balance
+          <span className="ml-2 text-xs px-1.5 py-0.5 rounded uppercase bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+            {networkId}
+          </span>
         </div>
-        <div className="text-blue-50 bg-blue-700 px-2 py-1 rounded-lg">{balanceInfo.network?.networkId || 'base-sepolia'}</div>
       </div>
 
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-col gap-2 bg-blue-700 rounded-xl p-3">
-          <div className="text-blue-200 text-sm">Wallet Address</div>
-          <div className="text-blue-50 font-mono text-sm break-all">{balanceInfo.address}</div>
-        </div>
+      <div className="mt-1 flex flex-col gap-1">
+        <div className="text-xs text-slate-500 dark:text-slate-400">Address</div>
+        <div className={`text-xs font-mono ${textColor} break-all`}>{balanceInfo.address}</div>
+      </div>
 
-        <div className="flex flex-col gap-2 bg-blue-700 rounded-xl p-3">
-          <div className="text-blue-200 text-sm">Native Token Balance</div>
-          <div className="text-blue-50 font-mono text-sm">{balanceInfo.nativeBalance || '0 WEI'}</div>
-        </div>
-        
-        {balanceInfo.tokens && balanceInfo.tokens.length > 0 && (
-          <div className="flex flex-col gap-2 bg-blue-700 rounded-xl p-3">
-            <div className="text-blue-200 text-sm">Other Tokens</div>
+      <div className="mt-1 flex flex-col gap-1">
+        <div className="text-xs text-slate-500 dark:text-slate-400">Native Balance</div>
+        <div className={`text-xs font-mono ${textColor}`}>{balanceInfo.nativeBalance || '0 WEI'}</div>
+      </div>
+      
+      {balanceInfo.tokens && balanceInfo.tokens.length > 0 && (
+        <div className="mt-1 flex flex-col gap-1">
+          <div className="text-xs text-slate-500 dark:text-slate-400">Other Tokens</div>
+          <div className="grid grid-cols-2 gap-1">
             {balanceInfo.tokens.map((token: any, index: number) => (
               <div key={index} className="flex justify-between items-center">
-                <span className="text-blue-50">{token.symbol}</span>
-                <span className="text-blue-50 font-mono">{token.balance}</span>
+                <span className={`text-xs ${textColor}`}>{token.symbol}</span>
+                <span className={`text-xs font-mono ${textColor}`}>{token.balance}</span>
               </div>
             ))}
           </div>
-        )}
-      </div>
-
-      <div className="text-blue-300 text-xs text-right">Powered by Coinbase AgentKit</div>
+        </div>
+      )}
     </div>
   );
 };
@@ -126,92 +156,192 @@ const TokenBalance = ({ balanceInfo }: { balanceInfo: any }) => {
 const TransactionResult = ({ transactionData }: { transactionData: any }) => {
   const isSuccess = transactionData.success;
   
+  // 根据交易状态选择样式 - 更优雅简约的配色
+  const accentColor = isSuccess ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400';
+  const iconColor = isSuccess ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-500 dark:text-red-400';
+  const bgColor = 'bg-slate-100 dark:bg-slate-800';
+  const textColor = 'text-slate-800 dark:text-slate-100';
+  const labelColor = 'text-slate-500 dark:text-slate-400';
+  
   return (
-    <div className={`flex flex-col gap-4 rounded-2xl p-4 ${isSuccess ? 'bg-green-800' : 'bg-red-800'} max-w-[500px]`}>
-      <div className="flex flex-row justify-between items-center">
-        <div className="flex flex-row gap-2 items-center">
-          <div className={`size-10 rounded-full ${isSuccess ? 'bg-green-200' : 'bg-red-200'} flex items-center justify-center`}>
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              width="24" 
-              height="24" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              className={isSuccess ? 'text-green-800' : 'text-red-800'}
-            >
-              {isSuccess ? (
-                <>
-                  <path d="M12 2v4" />
-                  <path d="m16.24 7.76-2.12 2.12" />
-                  <path d="M19 12h-4" />
-                  <path d="m16.24 16.24-2.12-2.12" />
-                  <path d="M12 19v-4" />
-                  <path d="m7.76 16.24 2.12-2.12" />
-                  <path d="M6 12h4" />
-                  <path d="m7.76 7.76 2.12 2.12" />
-                </>
-              ) : (
-                <>
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="m15 9-6 6" />
-                  <path d="m9 9 6 6" />
-                </>
-              )}
-            </svg>
-          </div>
-          <div className="text-2xl font-medium text-white">
-            {isSuccess ? 'Transaction Successful' : 'Transaction Failed'}
-          </div>
+    <div className={`flex flex-col gap-2 rounded-lg p-3 border ${bgColor} max-w-[400px]`}>
+      <div className="flex items-center gap-2">
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          width="20" 
+          height="20" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="currentColor" 
+          strokeWidth="2" 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          className={iconColor}
+        >
+          {isSuccess ? (
+            <>
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </>
+          ) : (
+            <>
+              <circle cx="12" cy="12" r="10" />
+              <path d="m15 9-6 6" />
+              <path d="m9 9 6 6" />
+            </>
+          )}
+        </svg>
+        <div className={`text-sm font-medium ${accentColor}`}>
+          {isSuccess ? 'Transaction Successful' : 'Transaction Failed'}
         </div>
       </div>
 
       {isSuccess && transactionData.transaction ? (
-        <div className="flex flex-col gap-3">
-          <div className={`flex flex-col gap-2 ${isSuccess ? 'bg-green-700' : 'bg-red-700'} rounded-xl p-3`}>
-            <div className={`text-sm ${isSuccess ? 'text-green-200' : 'text-red-200'}`}>Transaction Hash</div>
-            <div className="text-white font-mono text-sm break-all">{transactionData.transaction.hash}</div>
+        <div className="mt-1 flex flex-col gap-2">
+          <div className="flex flex-col gap-1">
+            <div className="text-xs text-slate-500 dark:text-slate-400">Transaction Hash</div>
+            <div className={`text-xs font-mono ${textColor} break-all`}>{transactionData.transaction.hash}</div>
           </div>
           
-          <div className="flex flex-row gap-3">
-            <div className={`flex-1 flex flex-col gap-2 ${isSuccess ? 'bg-green-700' : 'bg-red-700'} rounded-xl p-3`}>
-              <div className={`text-sm ${isSuccess ? 'text-green-200' : 'text-red-200'}`}>From</div>
-              <div className="text-white font-mono text-sm break-all">{transactionData.transaction.from}</div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex flex-col gap-1">
+              <div className="text-xs text-slate-500 dark:text-slate-400">From</div>
+              <div className={`text-xs font-mono ${textColor} truncate`}>{transactionData.transaction.from}</div>
             </div>
             
-            <div className={`flex-1 flex flex-col gap-2 ${isSuccess ? 'bg-green-700' : 'bg-red-700'} rounded-xl p-3`}>
-              <div className={`text-sm ${isSuccess ? 'text-green-200' : 'text-red-200'}`}>To</div>
-              <div className="text-white font-mono text-sm break-all">{transactionData.transaction.to}</div>
+            <div className="flex flex-col gap-1">
+              <div className="text-xs text-slate-500 dark:text-slate-400">To</div>
+              <div className={`text-xs font-mono ${textColor} truncate`}>{transactionData.transaction.to}</div>
             </div>
           </div>
           
-          <div className={`flex flex-col gap-2 ${isSuccess ? 'bg-green-700' : 'bg-red-700'} rounded-xl p-3`}>
-            <div className={`text-sm ${isSuccess ? 'text-green-200' : 'text-red-200'}`}>Amount</div>
-            <div className="text-white font-mono text-sm">{transactionData.transaction.amount} WEI</div>
+          <div className="flex flex-col gap-1">
+            <div className="text-xs text-slate-500 dark:text-slate-400">Amount</div>
+            <div className={`text-xs font-mono ${textColor}`}>{transactionData.transaction.amount} WEI</div>
           </div>
           
-          <div className="flex justify-end mt-2">
-            <a 
-              href={transactionData.transaction.explorerLink} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className={`text-sm ${isSuccess ? 'bg-green-600' : 'bg-red-600'} text-white py-2 px-4 rounded-lg hover:brightness-110 transition-all`}
-            >
-              View on Explorer
-            </a>
-          </div>
+          {transactionData.transaction.explorerLink && (
+            <div className="flex justify-end mt-1">
+              <a 
+                href={transactionData.transaction.explorerLink} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className={`text-xs py-1 px-2 rounded ${accentColor} hover:underline`}
+              >
+                View on Explorer
+              </a>
+            </div>
+          )}
         </div>
       ) : (
-        <div className={`flex flex-col gap-2 ${isSuccess ? 'bg-green-700' : 'bg-red-700'} rounded-xl p-3`}>
-          <div className={`text-sm ${isSuccess ? 'text-green-200' : 'text-red-200'}`}>Error</div>
-          <div className="text-white">{transactionData.error}</div>
+        <div className="mt-1 flex flex-col gap-1">
+          <div className="text-xs text-slate-500 dark:text-slate-400">Error</div>
+          <div className="text-xs text-red-500 dark:text-red-400">{transactionData.error}</div>
         </div>
       )}
-      
-      <div className={`text-xs text-right ${isSuccess ? 'text-green-300' : 'text-red-300'}`}>Powered by Coinbase AgentKit</div>
+    </div>
+  );
+};
+
+// MCP工具调用结果组件
+const MCPToolResult = ({ toolName, result }: { toolName: string, result: any }) => {
+  // 获取简化的工具名称
+  const simplifiedToolName = toolName.replace(/_/g, ' ').split(' ').map(
+    word => word.charAt(0).toUpperCase() + word.slice(1)
+  ).join(' ');
+  
+  // 确定是哪类工具以选择合适的样式
+  const isBlockchainInfo = toolName.startsWith('get_block') || toolName === 'get_latest_block' || toolName === 'get_chain_info';
+  const isContractInteraction = toolName.startsWith('read_contract') || toolName.startsWith('write_contract');
+  const isTokenOperation = toolName.includes('token') || toolName.includes('erc20') || toolName.includes('native_balance');
+  const isNftOperation = toolName.includes('nft') || toolName.includes('erc1155') || toolName.includes('erc721');
+  const isTransaction = toolName.includes('transaction') || toolName === 'estimate_gas';
+  const isGnfdOperation = toolName.startsWith('gnfd_');
+  
+  // 选择合适的颜色 - 更优雅简约的配色
+  let bgColor = 'bg-slate-100 dark:bg-slate-800';
+  let textColor = 'text-slate-800 dark:text-slate-100';
+  let accentColor = 'text-slate-600 dark:text-slate-300';
+  let iconColor = 'text-slate-500 dark:text-slate-400';
+  
+  if (isBlockchainInfo) {
+    accentColor = 'text-blue-600 dark:text-blue-400';
+    iconColor = 'text-blue-500 dark:text-blue-400';
+  } else if (isContractInteraction) {
+    accentColor = 'text-violet-600 dark:text-violet-400';
+    iconColor = 'text-violet-500 dark:text-violet-400';
+  } else if (isTokenOperation) {
+    accentColor = 'text-emerald-600 dark:text-emerald-400';
+    iconColor = 'text-emerald-500 dark:text-emerald-400';
+  } else if (isNftOperation) {
+    accentColor = 'text-rose-600 dark:text-rose-400';
+    iconColor = 'text-rose-500 dark:text-rose-400';
+  } else if (isTransaction) {
+    accentColor = 'text-amber-600 dark:text-amber-400';
+    iconColor = 'text-amber-500 dark:text-amber-400';
+  } else if (isGnfdOperation) {
+    accentColor = 'text-indigo-600 dark:text-indigo-400';
+    iconColor = 'text-indigo-500 dark:text-indigo-400';
+  }
+
+  return (
+    <div className={`flex items-center gap-3 rounded-lg p-3 border ${bgColor} max-w-[400px]`}>
+      <div className="flex-shrink-0">
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          width="20" 
+          height="20" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="currentColor" 
+          strokeWidth="2" 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          className={iconColor}
+        >
+          {isBlockchainInfo ? (
+            <>
+              <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+            </>
+          ) : isContractInteraction ? (
+            <>
+              <path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.77-.78a5.4 5.4 0 0 0-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z" />
+            </>
+          ) : isTokenOperation ? (
+            <>
+              <circle cx="12" cy="12" r="8" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </>
+          ) : isNftOperation ? (
+            <>
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <path d="M21 15l-5-5L5 21" />
+            </>
+          ) : isTransaction ? (
+            <>
+              <path d="M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" />
+              <path d="M16 2v4" />
+              <path d="M8 2v4" />
+              <path d="M3 10h18" />
+            </>
+          ) : (
+            <>
+              <polyline points="16 3 21 3 21 8" />
+              <line x1="4" y1="20" x2="21" y2="3" />
+              <polyline points="21 16 21 21 16 21" />
+              <line x1="15" y1="15" x2="21" y2="21" />
+              <line x1="4" y1="4" x2="9" y2="9" />
+            </>
+          )}
+        </svg>
+      </div>
+      <div className="flex flex-col">
+        <div className={`text-sm font-medium ${accentColor}`}>{simplifiedToolName}</div>
+        <div className={`text-xs ${textColor}`}>Successfully executed on BSC network</div>
+      </div>
     </div>
   );
 };
@@ -323,7 +453,9 @@ const PurePreviewMessage = ({
                             message.role === 'user',
                         })}
                       >
-                        <Markdown>{part.text}</Markdown>
+                        <div className="max-w-full overflow-hidden">
+                          <Markdown>{part.text}</Markdown>
+                        </div>
                       </div>
                     </div>
                   );
@@ -396,7 +528,7 @@ const PurePreviewMessage = ({
                           args={args}
                           isReadonly={isReadonly}
                         />
-                      ) : toolName === 'getMyWalletAddress' ? (
+                      ) : toolName === 'getMyWalletAddress' || toolName === 'getBSCWalletAddress' ? (
                         <WalletInfo walletInfo={args} />
                       ) : toolName === 'getMyTokenBalance' || toolName === 'getTokenBalance' ? (
                         <TokenBalance balanceInfo={args} />
@@ -491,7 +623,7 @@ const PurePreviewMessage = ({
                           result={result}
                           isReadonly={isReadonly}
                         />
-                      ) : toolName === 'getMyWalletAddress' ? (
+                      ) : toolName === 'getMyWalletAddress' || toolName === 'getBSCWalletAddress' ? (
                         <WalletInfo walletInfo={result} />
                       ) : toolName === 'getMyTokenBalance' || toolName === 'getTokenBalance' ? (
                         <TokenBalance balanceInfo={result} />
@@ -580,6 +712,19 @@ const PurePreviewMessage = ({
                             }
                           })()}
                         </div>
+                      ) : [
+                        'get_block_by_hash', 'get_block_by_number', 'get_latest_block', 'is_contract',
+                        'read_contract', 'write_contract', 'get_chain_info', 'get_supported_networks',
+                        'resolve_ens', 'get_erc20_token_info', 'get_native_balance', 'get_erc20_balance',
+                        'get_transaction', 'get_transaction_receipt', 'estimate_gas', 'transfer_native_token',
+                        'approve_token_spending', 'transfer_nft', 'transfer_erc1155', 'transfer_erc20',
+                        'get_address_from_private_key', 'get_nft_info', 'check_nft_ownership', 'get_erc1155_token_uri',
+                        'get_nft_balance', 'get_erc1155_balance', 'gnfd_get_account_balance', 'gnfd_get_module_accounts',
+                        'gnfd_get_all_sps', 'gnfd_create_bucket', 'gnfd_create_file', 'gnfd_create_folder',
+                        'gnfd_list_buckets', 'gnfd_list_objects', 'gnfd_delete_object', 'gnfd_delete_bucket',
+                        'gnfd_get_bucket_info', 'gnfd_get_object_info', 'gnfd_download_object'
+                      ].includes(toolName) ? (
+                        <MCPToolResult toolName={toolName} result={result} />
                       ) : (
                         <pre>{JSON.stringify(result, null, 2)}</pre>
                       )}

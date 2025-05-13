@@ -26,9 +26,13 @@ export function CodeBlock({
       </div>
     );
   } else {
+    // 检测内容是否可能是哈希值或地址（以0x开头的长字符串）
+    const content = String(children);
+    const isHashOrAddress = content.startsWith('0x') && content.length > 10;
+    
     return (
       <code
-        className={`${className} text-sm bg-zinc-100 dark:bg-zinc-800 py-0.5 px-1 rounded-md`}
+        className={`${className} text-sm ${isHashOrAddress ? 'font-mono bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700' : 'bg-zinc-100 dark:bg-zinc-800'} py-0.5 px-1.5 rounded-md break-all max-w-full inline-block overflow-hidden`}
         {...props}
       >
         {children}

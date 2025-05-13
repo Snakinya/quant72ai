@@ -160,7 +160,8 @@ export const wallet = pgTable(
       .notNull()
       .references(() => user.id),
     privateKey: text('privateKey').notNull(),
-    smartWalletAddress: text('smartWalletAddress').notNull(),
+    smartWalletAddress: text('smartWalletAddress'),
+    walletAddress: text('walletAddress'),
     networkId: varchar('networkId', { length: 64 }).notNull().default('base-mainnet'),
     createdAt: timestamp('createdAt').notNull().defaultNow(),
     updatedAt: timestamp('updatedAt').notNull().defaultNow(),
