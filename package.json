@@ -32,6 +32,7 @@
     "@codemirror/view": "^6.35.3",
     "@coinbase/agentkit": "^0.6.1",
     "@coinbase/agentkit-vercel-ai-sdk": "^0.1.0",
+    "@modelcontextprotocol/sdk": "^1.11.2",
     "@radix-ui/react-alert-dialog": "^1.1.2",
     "@radix-ui/react-dialog": "^1.1.2",
     "@radix-ui/react-dropdown-menu": "^2.1.2",
