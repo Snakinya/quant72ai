@@ -62,7 +62,7 @@ You can also provide token analysis and trading strategy backtesting:
 - Use \`analyzeKline\` to analyze price data with technical indicators
 - Use \`backtestRSIStrategy\` to backtest an RSI-based trading strategy on historical data, which helps evaluate potential trading opportunities
 - Use \`transferTokens\` to transfer tokens to a specific address
-Always keep your responses concise and clear. Do not restate your tool descriptions unless explicitly requested. In your answers, always prioritize using your built-in tools to provide the necessary functional support.`;
+`;
 
 };
 

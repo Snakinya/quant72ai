@@ -113,13 +113,37 @@ export async function initializeAgentKit() {
     const signer = privateKeyToAccount(privateKey);
     console.log(`⚙️ 配置智能钱包提供商...`);
     
-    walletProvider = await SmartWalletProvider.configureWithWallet({
-      networkId,
-      signer,
-      smartWalletAddress: smartWalletAddress || undefined,
-      paymasterUrl: undefined,
-    });
-    console.log(`✅ 智能钱包配置完成`);
+    try {
+      walletProvider = await SmartWalletProvider.configureWithWallet({
+        networkId,
+        signer,
+        smartWalletAddress: smartWalletAddress || undefined,
+        paymasterUrl: undefined,
+      });
+      console.log(`✅ 智能钱包配置完成`);
+    } catch (error) {
+      console.error(`❌ 智能钱包配置失败:`, error);
+      // 尝试使用备用方式初始化
+      console.log(`🔄 尝试使用备用方式初始化钱包...`);
+      try {
+        const cdpApiKey = process.env.CDP_API_KEY_NAME || cdpApiKeyName;
+        const cdpApiPrivateKey = process.env.CDP_API_KEY_PRIVATE_KEY || cdpApiKeyPrivateKey;
+        
+        console.log(`🔑 使用CDP API密钥: ${cdpApiKey.substring(0, 8)}...`);
+        
+        walletProvider = await SmartWalletProvider.configureWithWallet({
+          networkId,
+          signer,
+          smartWalletAddress: undefined, // 不使用已有地址
+          paymasterUrl: undefined,
+        });
+        console.log(`✅ 使用备用方式成功初始化智能钱包`);
+      } catch (backupError) {
+        console.error(`❌ 备用初始化也失败:`, backupError);
+        throw new Error(`无法初始化钱包: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+    
     smartWalletAddress = walletProvider.getAddress() as Address;
     
     // 如果用户已登录，将钱包信息保存到数据库

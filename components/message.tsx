@@ -346,6 +346,86 @@ const MCPToolResult = ({ toolName, result }: { toolName: string, result: any }) 
   );
 };
 
+// GraphQL查询结果组件
+export function GraphQLResult({ content }: { content: any }) {
+  // Parse content
+  const parsedContent = typeof content === 'string' ? JSON.parse(content) : content;
+  
+  // Format GraphQL query to look like JSON
+  const formatQuery = (query: string) => {
+    // Simple formatting to make GraphQL query look more like JSON
+    try {
+      // Remove line breaks and extra spaces
+      let formattedQuery = query.trim();
+      
+      // Add proper indentation for nested structures
+      formattedQuery = formattedQuery
+        .replace(/\{/g, '{\n  ')
+        .replace(/\}/g, '\n}')
+        .replace(/\s{2,}/g, ' ')
+        .replace(/,\s/g, ',\n  ');
+      
+      return formattedQuery;
+    } catch (e) {
+      return query; // Return original if formatting fails
+    }
+  };
+  
+  // Check for errors
+  if (parsedContent.error) {
+    return (
+      <div className="rounded-md bg-red-50 p-4 my-4 border border-red-200">
+        <div className="flex">
+          <div className="ml-3">
+            <h3 className="text-sm font-medium text-red-800">GraphQL Query Failed</h3>
+            <div className="mt-2 text-sm text-red-700">
+              <p>{parsedContent.error}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Display multi-step query results
+  if (parsedContent.steps && Array.isArray(parsedContent.steps)) {
+    return (
+      <div className="rounded-md bg-purple-50 p-4 my-4 border border-purple-200">
+        <h3 className="text-sm font-medium text-purple-800 mb-2">GraphQL Multi-step Query Executed Successfully</h3>
+        
+        <div className="space-y-4">
+          {parsedContent.steps.map((step: any, index: number) => (
+            <div key={index} className="border-t border-purple-200 pt-2">
+              <h4 className="text-sm font-medium text-purple-700">Step {index + 1}: {step.description}</h4>
+              
+              <div className="mt-2 px-3 py-2 bg-white dark:bg-gray-700 rounded-md border border-purple-100 dark:border-purple-900 overflow-x-auto">
+                <span className="text-xs font-mono text-gray-700 dark:text-gray-300">{formatQuery(step.query)}</span>
+              </div>
+              
+              {step.error ? (
+                <div className="mt-2 text-sm text-red-600">
+                  <p>Error: {step.error}</p>
+                </div>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Compatible with single-step query display
+  return (
+    <div className="rounded-md bg-purple-50 p-4 my-4 border border-purple-200">
+      <h3 className="text-sm font-medium text-purple-800">GraphQL Query Executed Successfully</h3>
+      
+      <div className="mt-2 px-3 py-2 bg-white dark:bg-gray-700 rounded-md border border-purple-100 dark:border-purple-900 overflow-x-auto">
+        <span className="text-xs font-mono text-gray-700 dark:text-gray-300">{formatQuery(parsedContent.query)}</span>
+      </div>
+    </div>
+  );
+}
+
 const PurePreviewMessage = ({
   chatId,
   message,
@@ -448,7 +528,7 @@ const PurePreviewMessage = ({
 
                       <div
                         data-testid="message-content"
-                        className={cn('flex flex-col gap-4', {
+                        className={cn('flex flex-col gap-2', {
                           'bg-primary text-primary-foreground px-3 py-2 rounded-xl':
                             message.role === 'user',
                         })}
@@ -531,7 +611,26 @@ const PurePreviewMessage = ({
                       ) : toolName === 'getMyWalletAddress' || toolName === 'getBSCWalletAddress' ? (
                         <WalletInfo walletInfo={args} />
                       ) : toolName === 'getMyTokenBalance' || toolName === 'getTokenBalance' ? (
-                        <TokenBalance balanceInfo={args} />
+                        <TokenBalance balanceInfo={
+                          // 处理可能是字符串的情况
+                          typeof args === 'string' ? 
+                          // 尝试解析字符串为JSON对象
+                          (() => {
+                            try {
+                              return JSON.parse(args);
+                            } catch (e) {
+                              // 如果解析失败，创建一个基本的对象结构
+                              return {
+                                address: args.match(/Address: (0x[a-fA-F0-9]+)/)?.[1] || "Unknown",
+                                network: {
+                                  networkId: args.match(/Network ID: ([a-z-]+)/)?.[1] || "base-mainnet"
+                                },
+                                nativeBalance: args.match(/Native Balance: ([0-9]+ WEI)/)?.[1] || "0 WEI",
+                                error: "Data format error"
+                              };
+                            }
+                          })() : args
+                        } />
                       ) : toolName === 'transferTokens' ? (
                         <div className="text-sm text-muted-foreground">
                           Processing transaction...
@@ -626,7 +725,26 @@ const PurePreviewMessage = ({
                       ) : toolName === 'getMyWalletAddress' || toolName === 'getBSCWalletAddress' ? (
                         <WalletInfo walletInfo={result} />
                       ) : toolName === 'getMyTokenBalance' || toolName === 'getTokenBalance' ? (
-                        <TokenBalance balanceInfo={result} />
+                        <TokenBalance balanceInfo={
+                          // 处理可能是字符串的情况
+                          typeof result === 'string' ? 
+                          // 尝试解析字符串为JSON对象
+                          (() => {
+                            try {
+                              return JSON.parse(result);
+                            } catch (e) {
+                              // 如果解析失败，创建一个基本的对象结构
+                              return {
+                                address: result.match(/Address: (0x[a-fA-F0-9]+)/)?.[1] || "Unknown",
+                                network: {
+                                  networkId: result.match(/Network ID: ([a-z-]+)/)?.[1] || "base-mainnet"
+                                },
+                                nativeBalance: result.match(/Native Balance: ([0-9]+ WEI)/)?.[1] || "0 WEI",
+                                error: "Data format error"
+                              };
+                            }
+                          })() : result
+                        } />
                       ) : toolName === 'transferTokens' ? (
                         <TransactionResult transactionData={result} />
                       ) : toolName === 'getMorphoVaults' ? (
@@ -712,6 +830,8 @@ const PurePreviewMessage = ({
                             }
                           })()}
                         </div>
+                      ) : toolName === 'graphQueryAgent' ? (
+                        <GraphQLResult content={result} />
                       ) : [
                         'get_block_by_hash', 'get_block_by_number', 'get_latest_block', 'is_contract',
                         'read_contract', 'write_contract', 'get_chain_info', 'get_supported_networks',

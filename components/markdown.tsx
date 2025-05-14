@@ -20,8 +20,8 @@ const components: Partial<Components> = {
       return <>{children}</>;
     }
     
-    // 正常情况下返回p标签，添加overflow-wrap以处理长文本
-    return <p className="overflow-wrap-anywhere max-w-full overflow-hidden" {...props}>{children}</p>;
+    // 正常情况下返回p标签，添加overflow-wrap以处理长文本，减少段落间距
+    return <p className="overflow-wrap-anywhere max-w-full overflow-hidden my-1" {...props}>{children}</p>;
   },
   ol: ({ node, children, ...props }) => {
     return (

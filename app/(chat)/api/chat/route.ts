@@ -31,6 +31,7 @@ import { myProvider } from '@/lib/ai/providers';
 import { getAgentKitTools, getMyWalletAddress, transferTokens } from '@/lib/ai/tools/agentkit';
 import { getMorphoVaults } from '@/lib/ai/tools/morpho';
 import { getBSCToolkit, cleanupBSCToolkit } from '@/lib/ai/tools/bsctoolkit';
+import { graphQueryAgent } from '@/lib/ai/tools/graphqlagent';
 import { z } from 'zod';
 import { cookies } from 'next/headers';
 
@@ -40,6 +41,12 @@ export const maxDuration = 60;
 let agentKitInitialized = false;
 let initializing = false;
 let cachedAgentKitTools: Record<string, any> = {};
+
+// 使用Map存储用户级别的缓存，确保在服务器重启后也能保持
+const userAgentKitCache = new Map<string, {
+  initialized: boolean;
+  tools: Record<string, any>;
+}>();
 
 export async function POST(request: Request) {
   try {
@@ -60,6 +67,8 @@ export async function POST(request: Request) {
     if (!session || !session.user || !session.user.id) {
       return new Response('Unauthorized', { status: 401 });
     }
+
+    const userId = session.user.id;
 
     const userMessage = getMostRecentUserMessage(messages);
 
@@ -107,25 +116,34 @@ export async function POST(request: Request) {
           if (shouldUseTools) {
             // 根据当前选择的链初始化相应的工具
             if (selectedChain === 'base') {
-              // 初始化Base链工具
-              if (!agentKitInitialized && !initializing) {
+              // 检查用户特定的缓存
+              const userCache = userAgentKitCache.get(userId);
+              
+              if (userCache?.initialized) {
+                // 使用用户缓存的工具
+                console.log(`使用用户 ${userId} 的缓存AgentKit工具`);
+                agentKitTools = userCache.tools;
+              } else if (!initializing) {
+                // 初始化Base链工具
                 initializing = true;
                 try {
-                  console.log("首次初始化AgentKit...");
+                  console.log(`为用户 ${userId} 初始化AgentKit...`);
                   agentKitTools = await getAgentKitTools({ session, dataStream });
-                  cachedAgentKitTools = agentKitTools; // 缓存工具
-                  agentKitInitialized = true;
-                  console.log("AgentKit工具初始化完成");
+                  
+                  // 保存到用户缓存
+                  userAgentKitCache.set(userId, {
+                    initialized: true,
+                    tools: agentKitTools
+                  });
+                  
+                  console.log(`用户 ${userId} 的AgentKit工具初始化完成`);
                 } catch (error) {
-                  console.error('首次加载AgentKit失败:', error);
+                  console.error(`用户 ${userId} 的AgentKit初始化失败:`, error);
                   // 确保即使AgentKit初始化失败，也可以使用基本工具
                   agentKitTools = { getMyWalletAddress, getMorphoVaults, transferTokens };
                 } finally {
                   initializing = false;
                 }
-              } else if (agentKitInitialized) {
-                console.log("使用已初始化的AgentKit");
-                agentKitTools = cachedAgentKitTools; // 使用缓存的工具
               } else {
                 console.log("AgentKit正在初始化中，稍后再试");
                 // 确保即使AgentKit正在初始化中，也可以使用基本工具
@@ -146,7 +164,7 @@ export async function POST(request: Request) {
           }
           
           // 构建激活工具列表
-          const baseTools = ['getWeather', 'createDocument', 'updateDocument', 'requestSuggestions', 'getTokenInfo', 'analyzeKline', 'backtestRSIStrategy'];
+          const baseTools = ['getWeather', 'createDocument', 'updateDocument', 'requestSuggestions', 'getTokenInfo', 'analyzeKline', 'backtestRSIStrategy', 'graphQueryAgent'];
 
           // 根据选择的链添加不同的工具
           let chainTools: string[] = [];
@@ -186,6 +204,7 @@ export async function POST(request: Request) {
               getTokenInfo,
               analyzeKline,
               backtestRSIStrategy,
+              graphQueryAgent,
               ...(selectedChain === 'base' ? { getMorphoVaults, transferTokens, ...agentKitTools } : {}),
               ...(selectedChain === 'bsc' ? bscTools : {}),
             },
