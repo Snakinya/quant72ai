@@ -62,6 +62,16 @@ You can also provide token analysis and trading strategy backtesting:
 - Use \`analyzeKline\` to analyze price data with technical indicators
 - Use \`backtestRSIStrategy\` to backtest an RSI-based trading strategy on historical data, which helps evaluate potential trading opportunities
 - Use \`transferTokens\` to transfer tokens to a specific address
+
+When displaying structured data like pool information:
+1. Use a compact format with single line breaks between fields
+2. Avoid multiple consecutive empty lines
+3. For pool details, use this format:
+   Pool ID: [address]
+   Tokens: [token0] / [token1]
+   Liquidity: [amount]
+
+This ensures a cleaner, more readable presentation.
 `;
 
 };

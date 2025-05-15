@@ -426,6 +426,12 @@ export function GraphQLResult({ content }: { content: any }) {
   );
 }
 
+// 添加预处理函数来清理多余的换行符
+function cleanupMessageText(text: string): string {
+  // 将3个或更多连续的换行符替换为2个换行符
+  return text.replace(/\n{2,}/g, '\n');
+}
+
 const PurePreviewMessage = ({
   chatId,
   message,
@@ -534,7 +540,7 @@ const PurePreviewMessage = ({
                         })}
                       >
                         <div className="max-w-full overflow-hidden">
-                          <Markdown>{part.text}</Markdown>
+                          <Markdown>{cleanupMessageText(part.text)}</Markdown>
                         </div>
                       </div>
                     </div>

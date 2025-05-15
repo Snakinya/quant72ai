@@ -395,7 +395,7 @@ export async function initializeBSCToolkit() {
     
     // 创建传输层
     const stdioTransport = new StdioClientTransport({
-      command: 'node', // 直接使用node运行
+      command: '/opt/homebrew/bin/node', // 直接使用node运行
       args: [mcpModulePath], // 指向实际文件路径
       env: {
         PRIVATE_KEY: privateKey.startsWith('0x') ? privateKey : `0x${privateKey}`

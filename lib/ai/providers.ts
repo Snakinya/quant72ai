@@ -22,7 +22,7 @@ export const myProvider = isTestEnvironment
         'chat-model-reasoning': reasoningModel,
         'title-model': titleModel,
         'artifact-model': artifactModel,
-        'deepseek-chat': deepseek('deepseek-chat'),
+        'deepseek-chat': deepseek('deepseek-v3'),
       },
     })
   : customProvider({
@@ -37,7 +37,7 @@ export const myProvider = isTestEnvironment
           middleware: extractReasoningMiddleware({ tagName: 'think' }),
         }),
         // DeepSeek Chat 模型
-        'deepseek-chat': deepseek('deepseek-chat'),
+        'deepseek-chat': deepseek('deepseek-v3'),
         // 对于分析型任务，使用更小的模型以减少令牌消耗
         'title-model': openai('gpt-4o-mini'),
         'artifact-model': openai('gpt-4o-mini'), // 对于处理文档类任务，可以使用小型模型

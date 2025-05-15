@@ -62,8 +62,194 @@ Reply in JSON format,not include any other text like "\`\`\`json" or "\`\`\`":
   ]
 }
 
-Example query:
-{ pools(first: 5, orderBy: createdAtTimestamp, orderDirection: desc) { id token0 { symbol } token1 { symbol } } }
+## 🧠 Uniswap V3 Subgraph Query examples
+
+### 🌐 Global Data
+
+#### Current global stats
+{
+  factory(id: "0x1F98431c8aD98523631AE4a59f267346ea31F984") {
+    poolCount
+    txCount
+    totalVolumeUSD
+    totalVolumeETH
+  }
+}
+
+#### Historical stats at a specific block
+{
+  factory(
+    id: "0x1F98431c8aD98523631AE4a59f267346ea31F984", 
+    block: { number: 13380584 }
+  ) {
+    poolCount
+    txCount
+    totalVolumeUSD
+    totalVolumeETH
+  }
+}
+
+---
+
+### 🧪 Pool Data
+
+#### Basic info for a specific pool
+{
+  pool(id: "0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8") {
+    tick
+    token0 { symbol }
+    token1 { symbol }
+    feeTier
+    sqrtPrice
+    liquidity
+  }
+}
+
+#### Pagination (fetch pools after skipping the first 1000)
+{
+  pools(first: 10, skip: 1000) {
+    id
+    token0 { symbol }
+    token1 { symbol }
+  }
+}
+
+#### Using skip variable (GraphQL client style)
+query pools($skip: Int!) {
+  pools(first: 1000, skip: $skip, orderDirection: asc) {
+    id
+    sqrtPrice
+    token0 { id }
+    token1 { id }
+  }
+}
+
+#### Top 1000 pools by liquidity
+{
+  pools(first: 1000, orderBy: liquidity, orderDirection: desc) {
+    id
+  }
+}
+
+#### Daily aggregated pool data
+{
+  poolDayDatas(
+    first: 10,
+    orderBy: date,
+    where: {
+      pool: "0x1d42064fc4beb5f8aaf85f4617ae8b3b5b8bd801",
+      date_gt: 1633642435
+    }) {
+    date
+    liquidity
+    sqrtPrice
+    token0Price
+    token1Price
+    volumeToken0
+    volumeToken1
+  }
+}
+
+---
+
+### 🔄 Swap Data
+
+#### Specific swap by txHash + index
+{
+  swap(id: "0x...txhash...#index") {
+    sender
+    recipient
+    amount0
+    amount1
+    timestamp
+    transaction {
+      id
+      blockNumber
+      gasUsed
+      gasPrice
+    }
+    token0 { symbol }
+    token1 { symbol }
+  }
+}
+
+#### Recent swaps in a specific pool
+{
+  swaps(
+    orderBy: timestamp,
+    orderDirection: desc,
+    where: {
+      pool: "0x7858e59e0c01ea06df3af3d20ac7b0003275d4bf"
+    }
+  ) {
+    sender
+    recipient
+    amount0
+    amount1
+    pool {
+      token0 { symbol }
+      token1 { symbol }
+    }
+  }
+}
+
+---
+
+### 🧾 Token Data
+
+#### Basic token info
+{
+  token(id: "0x1f9840a85d5af5bf1d1762f925bdaddc4201f984") {
+    symbol
+    name
+    decimals
+    volumeUSD
+    poolCount
+  }
+}
+
+#### 24H volume for past 10 days
+{
+  tokenDayDatas(
+    first: 10,
+    where: { token: "0x1f9840a85d5af5bf1d1762f925bdaddc4201f984" },
+    orderBy: date,
+    orderDirection: asc
+  ) {
+    date
+    volumeUSD
+    token {
+      id
+      symbol
+    }
+  }
+}
+
+#### Paginated token list (Apollo-style)
+query tokens($skip: Int!) {
+  tokens(first: 1000, skip: $skip) {
+    id
+    symbol
+    name
+  }
+}
+
+---
+
+### 🧱 Position Data (NFT-based LP position)
+
+#### Query position by token ID
+{
+  position(id: 3) {
+    id
+    collectedFeesToken0
+    collectedFeesToken1
+    liquidity
+    token0 { symbol }
+    token1 { symbol }
+  }
+}
+
 `
           },
           {
