@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-  Blockchain-based Quantitative Trading AI Assistant, providing token analysis, technical indicator calculation, and strategy backtesting
+  Comprehensive Blockchain Data Analysis & Interaction Platform, providing quantitative trading, chain data analytics, and interactive blockchain engagement
 </p>
 
 <p align="center">
@@ -17,37 +17,38 @@
 
 ## Project Overview
 
-Quant72 AI is a blockchain-based quantitative trading AI assistant designed specifically for cryptocurrency traders and investors. The platform combines advanced AI technology with quantitative analysis tools to help users perform market analysis, token evaluation, and strategy backtesting, enabling more informed trading decisions.
+Quant72 AI is a comprehensive blockchain interaction and analytics platform that combines powerful AI technology with deep blockchain integration. The platform serves as a versatile assistant for accessing, analyzing, and interacting with on-chain data across multiple networks, enabling both detailed quantitative trading analysis and broader blockchain engagement.
 
-Built on Next.js, the platform implements intelligent conversation functionality through AI SDK and obtains real-time market data via blockchain APIs. Whether you're an experienced trader or a cryptocurrency novice, Quant72 AI provides professional analytical support and trading recommendations.
+Built on Next.js, the platform implements intelligent conversation functionality through AI SDK and connects directly to blockchain networks and APIs for real-time data access. Whether you're an experienced trader, blockchain developer, or crypto enthusiast, Quant72 AI provides an intuitive interface to complex blockchain operations through simple conversational commands.
 
 ## Key Features
 
-### Token Information Query
+### Quantitative Trading
 
-- **Basic Token Information** - Quickly retrieve token fundamentals through pool addresses
+- **Token Information Query** - Quickly retrieve token fundamentals through pool addresses
 - **Real-time Price Data** - Get the latest token price, trading volume, and market cap information
-- **Liquidity Pool Analysis** - Analyze liquidity pool status and trading activity
+- **K-line Technical Analysis** - Support for various time periods with technical indicators such as RSI, MACD, Bollinger Bands
+- **Strategy Backtesting** - Test and evaluate trading strategies with performance metrics and optimization suggestions
 
-### K-line Technical Analysis
+### Chain Data Analytics
 
-- **Multi-period K-line Data** - Support for various time periods including 15 seconds, 1 minute, 5 minutes, 15 minutes, 1 hour, etc.
-- **Technical Indicator Calculation** - Automatically calculate key technical indicators such as RSI, MACD, Bollinger Bands
-- **Trend Analysis** - Intelligently identify market trends with confidence assessments
-- **Visualization Charts** - Intuitively display price trends and technical indicators
+- **On-chain Activity Monitoring** - Track transactions, smart contract interactions, and protocol usage
+- **Cross-chain Data Visualization** - Compare metrics across different blockchain networks
+- **Smart Contract Analysis** - Examine contract code, interactions, and historical performance
+- **DeFi Protocol Insights** - Analyze liquidity pools, yield farming opportunities, and protocol metrics
 
-### Strategy Backtesting
+### Interactive Blockchain Interface
 
-- **RSI Strategy Backtesting** - Backtest trading strategies based on RSI indicators
-- **Performance Evaluation** - Calculate key metrics such as strategy returns, maximum drawdown, win rate
-- **Transaction Records** - Detailed recording of entry and exit points for each trade
-- **Strategy Optimization Suggestions** - Provide strategy improvement recommendations based on backtesting results
+- **Conversational Access** - Interact with blockchains through natural language without technical barriers
+- **Multi-chain Support** - Seamlessly access Base and multiple blockchain networks from a single interface
+- **Wallet Management** - Check addresses and balances, transfer tokens, and manage digital assets conversationally
+- **DeFi & NFT Operations** - Query Uniswap pools, request testnet funds, or mint NFTs through natural conversations
 
 ### AI-Assisted Analysis
 
-- **Intelligent Conversation** - Communicate with the AI assistant using natural language to obtain market analysis and recommendations
-- **Code Generation** - Assist in generating trading strategy code and analysis scripts
-- **Document Generation** - Automatically generate analysis reports and trading plans
+- **Intelligent Conversation** - Communicate with the AI assistant using natural language to obtain insights and perform actions
+- **Code Generation** - Assist in generating trading strategy code, analysis scripts, and smart contract interactions
+- **Document Generation** - Automatically generate analysis reports, trading plans, and blockchain data summaries
 
 ## Installation
 
@@ -90,23 +91,32 @@ The application will run at [http://localhost:3000](http://localhost:3000).
 
 ## Usage Guide
 
-### Token Analysis
+### Token Analysis and Trading
 
 1. Enter the token pool address in the chat interface
 2. The AI assistant will automatically retrieve and analyze token information
 3. View technical indicators and trend analysis results
+4. Backtest strategies by specifying parameters such as time period, RSI values, and thresholds
 
-### Strategy Backtesting
+### Blockchain Data Exploration
 
-1. Enter the backtesting command in the chat interface, for example: "Backtest RSI strategy using token address 0x..."
-2. Specify backtesting parameters such as time period, RSI period, overbought/oversold thresholds
-3. View backtesting results, including return rate, win rate, and transaction records
+1. Request information about specific blockchain addresses, contracts, or protocols
+2. Analyze transaction history, contract interactions, or protocol metrics
+3. Compare data across different time periods or blockchain networks
+4. Generate visualizations of on-chain activities and trends
+
+### Blockchain Interaction
+
+1. Connect your wallet or specify addresses for interaction
+2. Issue conversational commands for token transfers, contract interactions, or NFT operations
+3. Receive real-time confirmation and transaction details
+4. Monitor transaction status and receive notifications upon completion
 
 ### Custom Analysis
 
 1. Describe your analysis needs using natural language
 2. The AI assistant will provide relevant analysis and recommendations based on your requirements
-3. You can request generation of analysis reports or trading plans
+3. Request generation of custom reports, visualizations, or action plans
 
 ## Contribution Guidelines
 
