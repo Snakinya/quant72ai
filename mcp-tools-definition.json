@@ -150,8 +150,7 @@
           },
           "privateKey": {
             "type": "string",
-            "description": "Private key of the sending account. Used only for transaction signing.",
-            "default": "0x0dfc32ea670c73899b08cee0bb24811928452dc9c200a4d5068eed32d78046d0"
+            "description": "Private key of the sending account. Used only for transaction signing."
           },
           "network": {
             "type": "string",
@@ -163,7 +162,8 @@
           "contractAddress",
           "abi",
           "functionName",
-          "args"
+          "args",
+          "privateKey"
         ],
         "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
@@ -191,34 +191,7 @@
     "description": "Get list of supported networks",
     "parameters": {
       "jsonSchema": {
-        "type": "object",
-        "properties": {},
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
-      }
-    }
-  },
-  "resolve_ens": {
-    "description": "Resolve an ENS name to an EVM address (not supported on BSC)",
-    "parameters": {
-      "jsonSchema": {
-        "type": "object",
-        "properties": {
-          "ensName": {
-            "type": "string",
-            "description": "ENS name to resolve (e.g., 'vitalik.eth')"
-          },
-          "network": {
-            "type": "string",
-            "description": "Network name (e.g. 'bsc', 'opbnb', 'ethereum', 'base', etc.) or chain ID. Supports others main popular networks. Defaults to BSC mainnet.",
-            "default": "eth"
-          }
-        },
-        "required": [
-          "ensName"
-        ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "type": "object"
       }
     }
   },
@@ -252,18 +225,22 @@
       "jsonSchema": {
         "type": "object",
         "properties": {
-          "address": {
-            "type": "string",
-            "description": "The address to check balance for"
-          },
           "network": {
             "type": "string",
             "description": "Network name (e.g. 'bsc', 'opbnb', 'ethereum', 'base', etc.) or chain ID. Supports others main popular networks. Defaults to BSC mainnet.",
             "default": "bsc"
+          },
+          "address": {
+            "type": "string",
+            "description": "The address to check balance for"
+          },
+          "privateKey": {
+            "type": "string",
+            "description": "Private key in hex format (with or without 0x prefix). SECURITY: This is used only for address derivation and is not stored. The private key will not be logged or displayed in chat history."
           }
         },
         "required": [
-          "address"
+          "privateKey"
         ],
         "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
@@ -288,11 +265,50 @@
             "type": "string",
             "description": "Network name (e.g. 'bsc', 'opbnb', 'ethereum', 'base', etc.) or chain ID. Supports others main popular networks. Defaults to BSC mainnet.",
             "default": "bsc"
+          },
+          "privateKey": {
+            "type": "string",
+            "description": "Private key in hex format (with or without 0x prefix). SECURITY: This is used only for address derivation and is not stored. The private key will not be logged or displayed in chat history."
           }
         },
         "required": [
           "tokenAddress",
-          "address"
+          "address",
+          "privateKey"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  },
+  "create_erc20_token": {
+    "description": "Create a new ERC20 token",
+    "parameters": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the token"
+          },
+          "symbol": {
+            "type": "string",
+            "description": "The symbol of the token"
+          },
+          "network": {
+            "type": "string",
+            "description": "Network name (e.g. 'bsc', 'opbnb', 'ethereum', 'base', etc.) or chain ID. Supports others main popular networks. Defaults to BSC mainnet.",
+            "default": "bsc"
+          },
+          "privateKey": {
+            "type": "string",
+            "description": "Private key in hex format (with or without 0x prefix). SECURITY: This is used only for address derivation and is not stored. The private key will not be logged or displayed in chat history."
+          }
+        },
+        "required": [
+          "name",
+          "symbol",
+          "privateKey"
         ],
         "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
@@ -308,30 +324,6 @@
           "txHash": {
             "type": "string",
             "description": "The transaction hash to look up (e.g., '0x1234...')"
-          },
-          "network": {
-            "type": "string",
-            "description": "Network name (e.g. 'bsc', 'opbnb', 'ethereum', 'base', etc.) or chain ID. Supports others main popular networks. Defaults to BSC mainnet.",
-            "default": "bsc"
-          }
-        },
-        "required": [
-          "txHash"
-        ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
-      }
-    }
-  },
-  "get_transaction_receipt": {
-    "description": "Get a transaction receipt by its hash",
-    "parameters": {
-      "jsonSchema": {
-        "type": "object",
-        "properties": {
-          "txHash": {
-            "type": "string",
-            "description": "The transaction hash to look up"
           },
           "network": {
             "type": "string",
@@ -379,6 +371,25 @@
       }
     }
   },
+  "get_address_from_private_key": {
+    "description": "Get the EVM address derived from a private key",
+    "parameters": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "privateKey": {
+            "type": "string",
+            "description": "Private key in hex format (with or without 0x prefix). SECURITY: This is used only for address derivation and is not stored. The private key will not be logged or displayed in chat history."
+          }
+        },
+        "required": [
+          "privateKey"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  },
   "transfer_native_token": {
     "description": "Transfer native tokens (BNB, ETH, MATIC, etc.) to an address",
     "parameters": {
@@ -387,10 +398,9 @@
         "properties": {
           "privateKey": {
             "type": "string",
-            "description": "Private key of the sender account in hex format (with or without 0x prefix). SECURITY: This is used only for transaction signing and is not stored.",
-            "default": "0x0dfc32ea670c73899b08cee0bb24811928452dc9c200a4d5068eed32d78046d0"
+            "description": "Private key in hex format (with or without 0x prefix). SECURITY: This is used only for address derivation and is not stored. The private key will not be logged or displayed in chat history."
           },
-          "to": {
+          "toAddress": {
             "type": "string",
             "description": "The recipient address or ENS name (e.g., '0x1234...' or 'vitalik.eth')"
           },
@@ -405,7 +415,8 @@
           }
         },
         "required": [
-          "to",
+          "privateKey",
+          "toAddress",
           "amount"
         ],
         "additionalProperties": false,
@@ -421,8 +432,7 @@
         "properties": {
           "privateKey": {
             "type": "string",
-            "description": "Private key of the token owner account in hex format (with or without 0x prefix). SECURITY: This is used only for transaction signing and is not stored.",
-            "default": "0x0dfc32ea670c73899b08cee0bb24811928452dc9c200a4d5068eed32d78046d0"
+            "description": "Private key in hex format (with or without 0x prefix). SECURITY: This is used only for address derivation and is not stored. The private key will not be logged or displayed in chat history."
           },
           "tokenAddress": {
             "type": "string",
@@ -443,92 +453,10 @@
           }
         },
         "required": [
+          "privateKey",
           "tokenAddress",
           "spenderAddress",
           "amount"
-        ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
-      }
-    }
-  },
-  "transfer_nft": {
-    "description": "Transfer an NFT (ERC721 token) from one address to another. Requires the private key of the current owner for signing the transaction.",
-    "parameters": {
-      "jsonSchema": {
-        "type": "object",
-        "properties": {
-          "privateKey": {
-            "type": "string",
-            "description": "Private key of the NFT owner account in hex format (with or without 0x prefix). SECURITY: This is used only for transaction signing and is not stored.",
-            "default": "0x0dfc32ea670c73899b08cee0bb24811928452dc9c200a4d5068eed32d78046d0"
-          },
-          "tokenAddress": {
-            "type": "string",
-            "description": "The contract address of the NFT collection (e.g., '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D' for Bored Ape Yacht Club)"
-          },
-          "tokenId": {
-            "type": "string",
-            "description": "The ID of the specific NFT to transfer (e.g., '1234')"
-          },
-          "toAddress": {
-            "type": "string",
-            "description": "The recipient wallet address that will receive the NFT"
-          },
-          "network": {
-            "type": "string",
-            "description": "Network name (e.g. 'bsc', 'opbnb', 'ethereum', 'base', etc.) or chain ID. Supports others main popular networks. Defaults to BSC mainnet.",
-            "default": "bsc"
-          }
-        },
-        "required": [
-          "tokenAddress",
-          "tokenId",
-          "toAddress"
-        ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
-      }
-    }
-  },
-  "transfer_erc1155": {
-    "description": "Transfer ERC1155 tokens to another address. ERC1155 is a multi-token standard that can represent both fungible and non-fungible tokens in a single contract.",
-    "parameters": {
-      "jsonSchema": {
-        "type": "object",
-        "properties": {
-          "privateKey": {
-            "type": "string",
-            "description": "Private key of the token owner account in hex format (with or without 0x prefix). SECURITY: This is used only for transaction signing and is not stored.",
-            "default": "0x0dfc32ea670c73899b08cee0bb24811928452dc9c200a4d5068eed32d78046d0"
-          },
-          "tokenAddress": {
-            "type": "string",
-            "description": "The contract address of the ERC1155 token collection (e.g., '0x76BE3b62873462d2142405439777e971754E8E77')"
-          },
-          "tokenId": {
-            "type": "string",
-            "description": "The ID of the specific token to transfer (e.g., '1234')"
-          },
-          "amount": {
-            "type": "string",
-            "description": "The quantity of tokens to send (e.g., '1' for a single NFT or '10' for 10 fungible tokens)"
-          },
-          "toAddress": {
-            "type": "string",
-            "description": "The recipient wallet address that will receive the tokens"
-          },
-          "network": {
-            "type": "string",
-            "description": "Network name (e.g. 'bsc', 'opbnb', 'ethereum', 'base', etc.) or chain ID. Supports others main popular networks. Defaults to BSC mainnet.",
-            "default": "bsc"
-          }
-        },
-        "required": [
-          "tokenAddress",
-          "tokenId",
-          "amount",
-          "toAddress"
         ],
         "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
@@ -543,8 +471,7 @@
         "properties": {
           "privateKey": {
             "type": "string",
-            "description": "Private key of the sender account in hex format (with or without 0x prefix). SECURITY: This is used only for transaction signing and is not stored.",
-            "default": "0x0dfc32ea670c73899b08cee0bb24811928452dc9c200a4d5068eed32d78046d0"
+            "description": "Private key in hex format (with or without 0x prefix). SECURITY: This is used only for address derivation and is not stored. The private key will not be logged or displayed in chat history."
           },
           "tokenAddress": {
             "type": "string",
@@ -565,27 +492,11 @@
           }
         },
         "required": [
+          "privateKey",
           "tokenAddress",
           "toAddress",
           "amount"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
-      }
-    }
-  },
-  "get_address_from_private_key": {
-    "description": "Get the EVM address derived from a private key",
-    "parameters": {
-      "jsonSchema": {
-        "type": "object",
-        "properties": {
-          "privateKey": {
-            "type": "string",
-            "description": "Private key in hex format (with or without 0x prefix). SECURITY: This is used only for address derivation and is not stored.",
-            "default": "0x0dfc32ea670c73899b08cee0bb24811928452dc9c200a4d5068eed32d78046d0"
-          }
-        },
         "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       }
@@ -620,42 +531,8 @@
       }
     }
   },
-  "check_nft_ownership": {
-    "description": "Check if an address owns a specific NFT",
-    "parameters": {
-      "jsonSchema": {
-        "type": "object",
-        "properties": {
-          "tokenAddress": {
-            "type": "string",
-            "description": "The contract address or ENS name of the NFT collection (e.g., '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D' for BAYC or 'boredapeyachtclub.eth')"
-          },
-          "tokenId": {
-            "type": "string",
-            "description": "The ID of the NFT to check (e.g., '1234')"
-          },
-          "ownerAddress": {
-            "type": "string",
-            "description": "The wallet address or ENS name to check ownership against (e.g., '0x1234...' or 'vitalik.eth')"
-          },
-          "network": {
-            "type": "string",
-            "description": "Network name (e.g. 'bsc', 'opbnb', 'ethereum', 'base', etc.) or chain ID. Supports others main popular networks. Defaults to BSC mainnet.",
-            "default": "bsc"
-          }
-        },
-        "required": [
-          "tokenAddress",
-          "tokenId",
-          "ownerAddress"
-        ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
-      }
-    }
-  },
-  "get_erc1155_token_uri": {
-    "description": "Get the metadata URI for an ERC1155 token (multi-token standard used for both fungible and non-fungible tokens). The URI typically points to JSON metadata about the token.",
+  "get_erc1155_token_metadata": {
+    "description": "Get the metadata for an ERC1155 token (multi-token standard used for both fungible and non-fungible tokens). The metadata typically points to JSON metadata about the token.",
     "parameters": {
       "jsonSchema": {
         "type": "object",
@@ -683,19 +560,27 @@
       }
     }
   },
-  "get_nft_balance": {
-    "description": "Get the total number of NFTs owned by an address from a specific collection. This returns the count of NFTs, not individual token IDs.",
+  "transfer_nft": {
+    "description": "Transfer an NFT to an address",
     "parameters": {
       "jsonSchema": {
         "type": "object",
         "properties": {
+          "privateKey": {
+            "type": "string",
+            "description": "Private key of the owner's account in hex format (with or without 0x prefix). SECURITY: This is used only for transaction signing and is not stored."
+          },
           "tokenAddress": {
             "type": "string",
             "description": "The contract address of the NFT collection (e.g., '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D' for Bored Ape Yacht Club)"
           },
-          "ownerAddress": {
+          "tokenId": {
             "type": "string",
-            "description": "The wallet address to check the NFT balance for (e.g., '0x1234...')"
+            "description": "The ID of the specific NFT to transfer (e.g., '1234')"
+          },
+          "toAddress": {
+            "type": "string",
+            "description": "The recipient address that will receive the NFT"
           },
           "network": {
             "type": "string",
@@ -704,31 +589,41 @@
           }
         },
         "required": [
+          "privateKey",
           "tokenAddress",
-          "ownerAddress"
+          "tokenId",
+          "toAddress"
         ],
         "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       }
     }
   },
-  "get_erc1155_balance": {
-    "description": "Get the balance of a specific ERC1155 token ID owned by an address. ERC1155 allows multiple tokens of the same ID, so the balance can be greater than 1.",
+  "transfer_erc1155": {
+    "description": "Transfer ERC1155 tokens to another address. ERC1155 is a multi-token standard that can represent both fungible and non-fungible tokens in a single contract.",
     "parameters": {
       "jsonSchema": {
         "type": "object",
         "properties": {
+          "privateKey": {
+            "type": "string",
+            "description": "Private key of the token owner account in hex format (with or without 0x prefix). SECURITY: This is used only for transaction signing and is not stored."
+          },
           "tokenAddress": {
             "type": "string",
             "description": "The contract address of the ERC1155 token collection (e.g., '0x76BE3b62873462d2142405439777e971754E8E77')"
           },
           "tokenId": {
             "type": "string",
-            "description": "The ID of the specific token to check the balance for (e.g., '1234')"
+            "description": "The ID of the specific token to transfer (e.g., '1234')"
           },
-          "ownerAddress": {
+          "amount": {
             "type": "string",
-            "description": "The wallet address to check the token balance for (e.g., '0x1234...')"
+            "description": "The quantity of tokens to send (e.g., '1' for a single NFT or '10' for 10 fungible tokens)"
+          },
+          "toAddress": {
+            "type": "string",
+            "description": "The recipient wallet address that will receive the tokens"
           },
           "network": {
             "type": "string",
@@ -737,9 +632,11 @@
           }
         },
         "required": [
+          "privateKey",
           "tokenAddress",
           "tokenId",
-          "ownerAddress"
+          "amount",
+          "toAddress"
         ],
         "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
@@ -747,7 +644,7 @@
     }
   },
   "gnfd_get_account_balance": {
-    "description": "Get the account balance for a Greenfield address",
+    "description": "Get the balance for an account",
     "parameters": {
       "jsonSchema": {
         "type": "object",
@@ -761,31 +658,14 @@
             "default": "testnet",
             "description": "Network name (e.g. 'testnet', 'mainnet'). Defaults to testnet."
           },
+          "address": {
+            "type": "string",
+            "description": "The address of the account to get balance for"
+          },
           "privateKey": {
             "type": "string",
-            "default": "0x0dfc32ea670c73899b08cee0bb24811928452dc9c200a4d5068eed32d78046d0",
+            "default": "",
             "description": "Private key of the account in hex format. SECURITY: This is used only for transaction signing."
-          }
-        },
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
-      }
-    }
-  },
-  "gnfd_get_module_accounts": {
-    "description": "Get a list of all module accounts and their information in Greenfield",
-    "parameters": {
-      "jsonSchema": {
-        "type": "object",
-        "properties": {
-          "network": {
-            "type": "string",
-            "enum": [
-              "testnet",
-              "mainnet"
-            ],
-            "default": "testnet",
-            "description": "Network name (e.g. 'testnet', 'mainnet'). Defaults to testnet."
           }
         },
         "additionalProperties": false,
@@ -831,7 +711,7 @@
           },
           "privateKey": {
             "type": "string",
-            "default": "0x0dfc32ea670c73899b08cee0bb24811928452dc9c200a4d5068eed32d78046d0",
+            "default": "",
             "description": "Private key of the account in hex format. SECURITY: This is used only for transaction signing."
           },
           "bucketName": {
@@ -862,7 +742,7 @@
           },
           "privateKey": {
             "type": "string",
-            "default": "0x0dfc32ea670c73899b08cee0bb24811928452dc9c200a4d5068eed32d78046d0",
+            "default": "",
             "description": "Private key of the account in hex format. SECURITY: This is used only for transaction signing."
           },
           "filePath": {
@@ -900,7 +780,7 @@
           },
           "privateKey": {
             "type": "string",
-            "default": "0x0dfc32ea670c73899b08cee0bb24811928452dc9c200a4d5068eed32d78046d0",
+            "default": "",
             "description": "Private key of the account in hex format. SECURITY: This is used only for transaction signing."
           },
           "folderName": {
@@ -940,7 +820,7 @@
           },
           "privateKey": {
             "type": "string",
-            "default": "0x0dfc32ea670c73899b08cee0bb24811928452dc9c200a4d5068eed32d78046d0",
+            "default": "",
             "description": "Private key of the account in hex format. SECURITY: This is used only for transaction signing."
           }
         },
@@ -992,7 +872,7 @@
           },
           "privateKey": {
             "type": "string",
-            "default": "0x0dfc32ea670c73899b08cee0bb24811928452dc9c200a4d5068eed32d78046d0",
+            "default": "",
             "description": "Private key of the account in hex format. SECURITY: This is used only for transaction signing."
           },
           "bucketName": {
@@ -1030,7 +910,7 @@
           },
           "privateKey": {
             "type": "string",
-            "default": "0x0dfc32ea670c73899b08cee0bb24811928452dc9c200a4d5068eed32d78046d0",
+            "default": "",
             "description": "Private key of the account in hex format. SECURITY: This is used only for transaction signing."
           },
           "bucketName": {
@@ -1063,6 +943,37 @@
             "type": "string",
             "default": "created-by-bnbchain-mcp",
             "description": "The bucket name to use. If not provided, will use default 'created-by-bnbchain-mcp'"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  },
+  "gnfd_get_bucket_full_info": {
+    "description": "Get bucket basic information and quota usage",
+    "parameters": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "network": {
+            "type": "string",
+            "enum": [
+              "testnet",
+              "mainnet"
+            ],
+            "default": "testnet",
+            "description": "Network name (e.g. 'testnet', 'mainnet'). Defaults to testnet."
+          },
+          "bucketName": {
+            "type": "string",
+            "default": "created-by-bnbchain-mcp",
+            "description": "The bucket name to use. If not provided, will use default 'created-by-bnbchain-mcp'"
+          },
+          "privateKey": {
+            "type": "string",
+            "default": "",
+            "description": "Private key of the account in hex format. SECURITY: This is used only for transaction signing."
           }
         },
         "additionalProperties": false,
@@ -1133,12 +1044,172 @@
           },
           "privateKey": {
             "type": "string",
-            "default": "0x0dfc32ea670c73899b08cee0bb24811928452dc9c200a4d5068eed32d78046d0",
+            "default": "",
             "description": "Private key of the account in hex format. SECURITY: This is used only for transaction signing."
           }
         },
         "required": [
           "objectName"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  },
+  "gnfd_get_payment_accounts": {
+    "description": "Get the payment accounts for a given address",
+    "parameters": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "network": {
+            "type": "string",
+            "enum": [
+              "testnet",
+              "mainnet"
+            ],
+            "default": "testnet",
+            "description": "Network name (e.g. 'testnet', 'mainnet'). Defaults to testnet."
+          },
+          "address": {
+            "type": "string",
+            "description": "The address of the payment account to get. If not provided, will use the private key to get the payment account."
+          },
+          "privateKey": {
+            "type": "string",
+            "default": "",
+            "description": "Private key of the account in hex format. SECURITY: This is used only for transaction signing."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  },
+  "gnfd_create_payment_account": {
+    "description": "Create a new payment account",
+    "parameters": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "network": {
+            "type": "string",
+            "enum": [
+              "testnet",
+              "mainnet"
+            ],
+            "default": "testnet",
+            "description": "Network name (e.g. 'testnet', 'mainnet'). Defaults to testnet."
+          },
+          "privateKey": {
+            "type": "string",
+            "default": "",
+            "description": "Private key of the account in hex format. SECURITY: This is used only for transaction signing."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  },
+  "gnfd_deposit_to_payment": {
+    "description": "Deposit funds into a payment account",
+    "parameters": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "network": {
+            "type": "string",
+            "enum": [
+              "testnet",
+              "mainnet"
+            ],
+            "default": "testnet",
+            "description": "Network name (e.g. 'testnet', 'mainnet'). Defaults to testnet."
+          },
+          "to": {
+            "type": "string",
+            "description": "The payment account address to deposit to"
+          },
+          "amount": {
+            "type": "string",
+            "description": "The amount to deposit (in BNB)"
+          },
+          "privateKey": {
+            "type": "string",
+            "default": "",
+            "description": "Private key of the account in hex format. SECURITY: This is used only for transaction signing."
+          }
+        },
+        "required": [
+          "to",
+          "amount"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  },
+  "gnfd_withdraw_from_payment": {
+    "description": "Withdraw funds from a payment account",
+    "parameters": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "network": {
+            "type": "string",
+            "enum": [
+              "testnet",
+              "mainnet"
+            ],
+            "default": "testnet",
+            "description": "Network name (e.g. 'testnet', 'mainnet'). Defaults to testnet."
+          },
+          "from": {
+            "type": "string",
+            "description": "The payment account address to withdraw from"
+          },
+          "amount": {
+            "type": "string",
+            "description": "The amount to withdraw (in BNB)"
+          },
+          "privateKey": {
+            "type": "string",
+            "default": "",
+            "description": "Private key of the account in hex format. SECURITY: This is used only for transaction signing."
+          }
+        },
+        "required": [
+          "from",
+          "amount"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  },
+  "gnfd_get_payment_account_info": {
+    "description": "Get the info for a payment account",
+    "parameters": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "network": {
+            "type": "string",
+            "enum": [
+              "testnet",
+              "mainnet"
+            ],
+            "default": "testnet",
+            "description": "Network name (e.g. 'testnet', 'mainnet'). Defaults to testnet."
+          },
+          "paymentAddress": {
+            "type": "string",
+            "description": "The address of the payment account to get info for"
+          }
+        },
+        "required": [
+          "paymentAddress"
         ],
         "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"

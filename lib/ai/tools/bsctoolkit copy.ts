@@ -7,6 +7,7 @@ import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import * as fs from 'fs';
 import * as path from 'path';
 import { experimental_createMCPClient } from 'ai';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 
 // 预定义MCP工具的参数模式
 const MCP_TOOL_SCHEMAS = {
@@ -386,22 +387,27 @@ export async function initializeBSCToolkit() {
     const account = privateKeyToAccount(privateKey);
     walletAddress = account.address;
 
-    // 使用 SSE 模式连接到 Cloud Run 部署的 BNBChain MCP 服务
-    console.log(`🔄 Initializing BNBChain MCP client (SSE mode)...`);
+    // 使用更简单的方式初始化MCP客户端
+    console.log(`🔄 Initializing BNBChain MCP client...`);
     
-    // 创建 SSE MCP 客户端
+    // 构建MCP模块路径 - 直接使用node_modules中的文件
+    const mcpModulePath = path.resolve(process.cwd(), 'node_modules/@bnb-chain/mcp/dist/index.js');
+    
+    // 创建传输层
+    const stdioTransport = new StdioClientTransport({
+      command: '/opt/homebrew/bin/node', // 直接使用node运行
+      args: [mcpModulePath], // 指向实际文件路径
+      env: {
+        PRIVATE_KEY: privateKey.startsWith('0x') ? privateKey : `0x${privateKey}`
+      }
+    });
+
+    // 创建MCP客户端 - 使用预定义的模式
     const mcpClient = await experimental_createMCPClient({
-      transport: {
-        type: 'sse',
-        url: 'https://bnbmcp-1050777029418.asia-south1.run.app/sse',
-        headers: {
-          // 可以在这里添加其他认证头
-          'User-Agent': `BSCToolkit-${userId}`,
-        },
-      },
+      transport: stdioTransport,
     });
     
-    console.log(`✅ BNBChain MCP client initialized (SSE mode)`);
+    console.log(`✅ BNBChain MCP client initialized`);
     
     // 保存状态 - 初始化时不立即加载工具，而是在首次请求时加载
     const bscToolkitState: BSCToolkitState = {
@@ -503,7 +509,10 @@ export async function getBSCToolkit() {
       // 如果工具已经加载了，直接返回缓存的工具
       if (state.isToolsLoaded && Object.keys(state.mcpTools).length > 0) {
         console.log(`✅ [${userId}] 使用缓存的MCP工具，共${Object.keys(state.mcpTools).length}个工具`);
-        return createWrappedTools(state);
+        return {
+          getBSCWalletAddress,
+          ...state.mcpTools
+        };
       }
       console.log(`🔄 [${userId}] BSC客户端已初始化，但工具尚未加载，开始加载工具...`);
     } else {
@@ -555,8 +564,11 @@ export async function getBSCToolkit() {
       state.mcpTools = {}; // 失败时使用空对象
     }
     
-    // 返回包装后的工具
-    return createWrappedTools(state);
+    // 构建工具集合 - 包括钱包地址工具和所有MCP工具
+    return {
+      getBSCWalletAddress,
+      ...state.mcpTools
+    };
   } catch (error) {
     console.error("❌ Failed to get BSC toolkit:", error);
     
@@ -565,53 +577,6 @@ export async function getBSCToolkit() {
       getBSCWalletAddress,
     };
   }
-}
-
-// 创建包装后的工具，自动传递私钥
-function createWrappedTools(state: BSCToolkitState) {
-  const wrappedTools: Record<string, any> = {
-    getBSCWalletAddress,
-  };
-  
-  // 需要自动传递私钥的工具列表
-  const toolsNeedingPrivateKey = [
-    'write_contract',
-    'transfer_native_token', 
-    'approve_token_spending',
-    'transfer_nft',
-    'transfer_erc1155', 
-    'transfer_erc20',
-    'gnfd_get_account_balance',
-    'gnfd_create_bucket',
-    'gnfd_create_file',
-    'gnfd_create_folder',
-    'gnfd_list_buckets',
-    'gnfd_delete_object',
-    'gnfd_delete_bucket',
-    'gnfd_download_object'
-  ];
-  
-  // 包装每个 MCP 工具
-  for (const [toolName, originalTool] of Object.entries(state.mcpTools)) {
-    if (toolsNeedingPrivateKey.includes(toolName)) {
-      // 需要私钥的工具：自动注入私钥参数
-      wrappedTools[toolName] = {
-        ...originalTool,
-        execute: async (args: any, options: any) => {
-          // 如果没有提供私钥，使用用户的私钥
-          if (!args.privateKey) {
-            args.privateKey = state.privateKey;
-          }
-          return await originalTool.execute(args, options);
-        }
-      };
-    } else {
-      // 不需要私钥的工具：直接使用原工具
-      wrappedTools[toolName] = originalTool;
-    }
-  }
-  
-  return wrappedTools;
 }
 
 // 在组件卸载或服务器关闭时清理MCP客户端
